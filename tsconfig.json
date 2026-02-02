@@ -1,6 +1,6 @@
 {
   "extends": [
-    "../../tsconfig.base"
+    "./tsconfig.base"
   ],
   "compilerOptions": {
     "outDir": "./build",
@@ -13,9 +13,4 @@
     "src/**/*.json",
     "scripts"
   ],
-  "references": [
-    {
-      "path": "../lib-core"
-    }
-  ]
 }

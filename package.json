@@ -11,6 +11,13 @@
     }
   },
   "scripts": {
+    "ts": "tsc --build --watch",
+    "tsbuild": "tsc --build",
+    "lint": "eslint .",
+    "pretty": "prettier --check './packages/**/src/**/*.{js,ts,jsx,tsx,json}'",
+    "pretty:write": "prettier --write './packages/**/src/**/*.{js,ts,jsx,tsx,json}'",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "generate-seeds": "node --env-file .env ./build/scripts/generateSeeds.js",
     "generate-scenarios": "node --env-file .env ./build/scripts/generateScenarios.js"
   },
@@ -26,6 +33,22 @@
     "valibot": "^1.2.0"
   },
   "devDependencies": {
-    "@types/node": "^25.2.0"
+    "@eslint/js": "9.39.2",
+    "@types/node": "25.2.0",
+    "@typescript-eslint/eslint-plugin": "8.54.0",
+    "@typescript-eslint/parser": "8.54.0",
+    "@typescript-eslint/utils": "8.54.0",
+    "eslint": "9.39.2",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-drizzle": "0.2.3",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "7.0.1",
+    "globals": "17.3.0",
+    "prettier": "3.8.1",
+    "prettier-plugin-organize-imports": "4.3.0",
+    "prettier-plugin-tailwindcss": "0.7.2",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.54.0",
+    "vitest": "4.0.18"
   }
 }
