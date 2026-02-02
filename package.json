@@ -1,0 +1,31 @@
+{
+  "name": "@korabench/benchmark",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "module": "./build/src/index.js",
+  "types": "./build/src/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./build/src/index.js"
+    }
+  },
+  "scripts": {
+    "generate-seeds": "node --env-file .env ./build/scripts/generateSeeds.js",
+    "generate-scenarios": "node --env-file .env ./build/scripts/generateScenarios.js"
+  },
+  "dependencies": {
+    "@korabench/core": "^1.0.4",
+    "@types/uuid": "^11.0.0",
+    "@valibot/to-json-schema": "^1.5.0",
+    "jsonc-parser": "^3.3.1",
+    "openai": "^6.17.0",
+    "p-queue": "^9.1.0",
+    "remeda": "^2.33.4",
+    "uuid": "^13.0.0",
+    "valibot": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.0"
+  }
+}

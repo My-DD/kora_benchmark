@@ -1,0 +1,54 @@
+{
+  "search.exclude": {
+    "**/.yarn": true,
+    "**/.pnp.*": true
+  },
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "files.autoSave": "onFocusChange",
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "typescript.preferences.importModuleSpecifierEnding": "js",
+  "javascript.preferences.importModuleSpecifierEnding": "js",
+  "typescript.preferences.useAliasesForRenames": false,
+  "javascript.preferences.useAliasesForRenames": false,
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+  "tailwindCSS.classFunctions": [
+    "tv",
+    "tiwi",
+    "tiwi\\.[a-z-]+"
+  ],
+  // "tailwindCSS.experimental.classRegex": [
+  //   [
+  //     "(?:tiwi|tw)[.(][^`]+([^;]*)",
+  //     "[\"'`\\}]([^\"'`\\$]*)[\"'`\\$]"
+  //   ]
+  // ],
+  "cSpell.words": [
+    "CSAM",
+    "deepseek",
+    "Dismissable",
+    "kimi",
+    "KORA",
+    "korabench",
+    "Lato",
+    "MAILCOACH",
+    "ministral",
+    "mistralai",
+    "moonshotai",
+    "neondatabase",
+    "nivo",
+    "nums",
+    "nvmrc",
+    "Parasocial",
+    "picklist",
+    "prerendered",
+    "qwen",
+    "safetyteam",
+    "tiwi",
+    "workersai"
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib",
+}

@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(yarn tsbuild:*)",
+      "Bash(yarn)",
+      "Bash(yarn prettier:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git restore:*)",
+      "Bash(yarn why:*)",
+      "Bash(yarn npm info:*)",
+      "Bash(npm view:*)",
+      "Bash(find:*)",
+      "mcp__ide__getDiagnostics"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git diff --name-only --diff-filter=AM | grep -E \"\\.(ts|tsx)$\" | xargs yarn prettier --write >> ~/.claude/bash-command-log.txt 2>&1"
+          }
+        ]
+      }
+    ]
+  }
+}
