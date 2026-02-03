@@ -1,7 +1,7 @@
 import {Script} from "@korabench/core";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import {GenerateSeedsContext} from "../benchmark.js";
+import {GenerateSeedsContext, GenerateSeedsOptions} from "../benchmark.js";
 import {Program} from "../cli.js";
 import {kora} from "../kora.js";
 import {getStructuredResponse} from "./model.js";
@@ -9,7 +9,8 @@ import {getStructuredResponse} from "./model.js";
 export async function generateSeeds(
   _program: Program,
   modelSlug: string,
-  outputFilePath: string
+  outputFilePath: string,
+  options?: GenerateSeedsOptions
 ) {
   const context: GenerateSeedsContext = {
     getResponse: async request => ({
@@ -24,17 +25,19 @@ export async function generateSeeds(
 
   await fs.mkdir(path.dirname(outputFilePath), {recursive: true});
 
-  let progress: ReturnType<typeof Script.progress> | undefined;
+  const generator = kora.generateScenarioSeeds(context, options);
+  const first = await generator.next();
+  if (first.done) {
+    console.log("\nNo seeds to generate.");
+    return;
+  }
+
+  const progress = Script.progress(first.value.total, text =>
+    process.stdout.write(text)
+  );
   let seedCount = 0;
 
-  for await (const event of kora.generateScenarioSeeds(context)) {
-    if (!progress) {
-      progress = Script.progress(event.total, text =>
-        process.stdout.write(text)
-      );
-      continue;
-    }
-
+  for await (const event of generator) {
     for (const seed of event.items) {
       await fs.appendFile(outputFilePath, JSON.stringify(seed) + "\n");
       seedCount++;
@@ -42,6 +45,6 @@ export async function generateSeeds(
     }
   }
 
-  progress?.finish();
+  progress.finish();
   console.log(`\nGenerated ${seedCount} seeds → ${outputFilePath}`);
 }

@@ -32,13 +32,18 @@ export interface GenerationEvent<T> {
   items: readonly T[];
 }
 
+export interface GenerateSeedsOptions {
+  seedsPerTask?: number;
+}
+
 export interface Benchmark<TScenarioSeed, TScenario, TTestResult, TRunResult> {
   scenarioSeedType: SchemaWithOutput<TScenarioSeed>;
   scenarioType: SchemaWithOutput<TScenario>;
   testResultType: SchemaWithOutput<TTestResult>;
   runResultType: SchemaWithOutput<TRunResult>;
   generateScenarioSeeds(
-    c: GenerateSeedsContext
+    c: GenerateSeedsContext,
+    options?: GenerateSeedsOptions
   ): AsyncGenerator<GenerationEvent<TScenarioSeed>>;
   expandScenario(
     c: ExpandScenarioContext,

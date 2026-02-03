@@ -45,10 +45,10 @@ export const kora = Benchmark.new({
   scenarioType: Scenario.io,
   testResultType: TestResult.io,
   runResultType: RunResult.io,
-  async *generateScenarioSeeds(c) {
+  async *generateScenarioSeeds(c, options) {
     const riskCategories = RiskCategory.listAll();
     const motivations = Motivation.listAll();
-    const seedsPerTask = 8;
+    const seedsPerTask = options?.seedsPerTask ?? 8;
     const SeedsOutput = v.strictObject({
       seeds: v.array(ModelScenarioSeed.io),
     });

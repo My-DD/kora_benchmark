@@ -26,7 +26,7 @@ const dataPath = path.join(pkg.root, "data");
 
 const defaultSeedsPath = path.join(dataPath, "seeds.jsonl");
 const defaultScenariosPath = path.join(dataPath, "scenarios.jsonl");
-const defaultResultsPath = path.join(dataPath, "results.jsonl");
+const defaultResultsPath = path.join(dataPath, "results.json");
 
 const program = new Command()
   .addHelpText(
@@ -53,7 +53,16 @@ program
     "path of the output seeds JSONL file",
     defaultSeedsPath
   )
-  .action((model, outputPath) => generateSeeds(program, model, outputPath));
+  .option(
+    "--seeds-per-task <count>",
+    "number of seeds to generate per risk/age/motivation combination",
+    "8"
+  )
+  .action((model, outputPath, opts) =>
+    generateSeeds(program, model, outputPath, {
+      seedsPerTask: parseInt(opts.seedsPerTask, 10),
+    })
+  );
 
 program
   .command("expand-scenarios")
@@ -87,7 +96,7 @@ program
   )
   .argument(
     "[output-path]",
-    "path of the output results JSONL file",
+    "path of the output results JSON file",
     defaultResultsPath
   )
   .action((judgeModel, userModel, targetModel, scenariosPath, outputPath) =>
