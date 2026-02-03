@@ -64,6 +64,15 @@ async function countTestTasks(filePath: string): Promise<number> {
   return count;
 }
 
+async function hasTempFiles(tempDir: string): Promise<boolean> {
+  try {
+    const files = await fs.readdir(tempDir);
+    return files.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 export async function runCommand(
   _program: Program,
   judgeModelSlug: string,
@@ -97,6 +106,13 @@ export async function runCommand(
 
   const outputDir = path.dirname(outputFilePath);
   const tempDir = path.join(outputDir, ".kora-run-tmp");
+
+  // Clear output file if no process in progress (no temp files)
+  if (!(await hasTempFiles(tempDir))) {
+    await fs.mkdir(outputDir, {recursive: true});
+    await fs.writeFile(outputFilePath, "");
+  }
+
   await fs.mkdir(tempDir, {recursive: true});
 
   const totalTests = await countTestTasks(scenariosFilePath);

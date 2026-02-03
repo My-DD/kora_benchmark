@@ -24,6 +24,7 @@ export async function generateSeeds(
   };
 
   await fs.mkdir(path.dirname(outputFilePath), {recursive: true});
+  await fs.writeFile(outputFilePath, ""); // Clear file before starting
 
   const generator = kora.generateScenarioSeeds(context, options);
   const first = await generator.next();
