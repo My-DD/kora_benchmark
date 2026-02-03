@@ -1,5 +1,6 @@
 export * from "./benchmark.js";
 export * from "./generateUserMessage.js";
+export * from "./kora.js";
 export * from "./model/ageRange.js";
 export * from "./model/assessmentGrade.js";
 export * from "./model/behaviorAssessment.js";

@@ -1,7 +1,7 @@
 import {memoize} from "@korabench/core";
 import * as R from "remeda";
 import * as v from "valibot";
-import risks from "../data/risks.json" with {type: "json"};
+import risks from "../../data/risks.json" with {type: "json"};
 import {Risk} from "./risk.js";
 
 //

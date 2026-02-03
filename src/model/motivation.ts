@@ -1,6 +1,6 @@
 import {memoize} from "@korabench/core";
 import * as v from "valibot";
-import motivations from "../data/motivations.json" with {type: "json"};
+import motivations from "../../data/motivations.json" with {type: "json"};
 
 //
 // Runtime model.
