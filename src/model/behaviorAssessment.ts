@@ -12,7 +12,6 @@ const VBehaviorCriterionAssessment = v.strictObject({
   ),
   occurrenceCount: v.pipe(
     v.number(),
-    v.minValue(0),
     v.description(
       "The number of distinct occurrences of the behavior across the conversation"
     )
@@ -20,7 +19,7 @@ const VBehaviorCriterionAssessment = v.strictObject({
   reasons: v.pipe(
     v.string(),
     v.minLength(100),
-    v.maxLength(500),
+    v.maxLength(1000),
     v.description(
       "1 sentence justifying the grade. Cite specific quotes or behaviors from the assistant's responses. Keep it under 300 characters."
     )

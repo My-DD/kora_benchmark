@@ -3,12 +3,19 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as readline from "node:readline";
 import {flatTransform, pipeline, reduce} from "streaming-iterables";
+import {v4 as uuid} from "uuid";
 import * as v from "valibot";
 import {TestContext} from "../benchmark.js";
 import {Program} from "../cli.js";
 import {kora} from "../kora.js";
 import {Scenario} from "../model/scenario.js";
+import {ScenarioKey} from "../model/scenarioKey.js";
 import {TestResult} from "../model/testResult.js";
+import {
+  ageRangeToAge,
+  getChatEndpointResponse,
+  restoreChatEndpointMemory,
+} from "./chatEndpoint.js";
 import {getStructuredResponse, getTextResponse} from "./model.js";
 
 interface TestTask {
@@ -26,6 +33,13 @@ interface RunState {
   failureCount: number;
   testCount: number;
   runResult: RunResult | undefined;
+}
+
+function isUrlTarget(targetModelSlug: string): boolean {
+  return (
+    targetModelSlug.startsWith("http://") ||
+    targetModelSlug.startsWith("https://")
+  );
 }
 
 function taskTempFileName(key: string): string {
@@ -47,19 +61,29 @@ async function* readScenariosFromJsonl(
 }
 
 async function* scenariosToTestTasks(
-  filePath: string
+  filePath: string,
+  skipDefault: boolean
 ): AsyncGenerator<TestTask> {
   for await (const scenario of readScenariosFromJsonl(filePath)) {
     for (const key of kora.mapScenarioToKeys(scenario)) {
+      if (skipDefault && key.endsWith(":default")) {
+        continue;
+      }
       yield {scenario, key};
     }
   }
 }
 
-async function countTestTasks(filePath: string): Promise<number> {
+async function countTestTasks(
+  filePath: string,
+  skipDefault: boolean
+): Promise<number> {
   let count = 0;
   for await (const scenario of readScenariosFromJsonl(filePath)) {
-    count += kora.mapScenarioToKeys(scenario).length;
+    const keys = kora.mapScenarioToKeys(scenario);
+    count += skipDefault
+      ? keys.filter(k => !k.endsWith(":default")).length
+      : keys.length;
   }
   return count;
 }
@@ -73,15 +97,12 @@ async function hasTempFiles(tempDir: string): Promise<boolean> {
   }
 }
 
-export async function runCommand(
-  _program: Program,
+function createStandardContext(
   judgeModelSlug: string,
   userModelSlug: string,
-  targetModelSlug: string,
-  scenariosFilePath: string,
-  outputFilePath: string
-) {
-  const context: TestContext = {
+  targetModelSlug: string
+): TestContext {
+  return {
     getUserResponse: async request => ({
       output: await getTextResponse(userModelSlug, request.messages, {
         maxTokens: request.maxTokens,
@@ -103,6 +124,74 @@ export async function runCommand(
       ),
     }),
   };
+}
+
+async function createChatEndpointContext(
+  judgeModelSlug: string,
+  userModelSlug: string,
+  targetBaseUrl: string,
+  taskKey: string,
+  scenario: Scenario
+): Promise<TestContext> {
+  const sessionId = `${uuid()}_${uuid()}`;
+  const key = ScenarioKey.ofString(taskKey);
+  const age = ageRangeToAge(key.ageRange);
+
+  if (scenario.modelMemory) {
+    await restoreChatEndpointMemory(
+      targetBaseUrl,
+      sessionId,
+      age,
+      scenario.modelMemory
+    );
+  }
+
+  return {
+    getUserResponse: async request => ({
+      output: await getTextResponse(userModelSlug, request.messages, {
+        maxTokens: request.maxTokens,
+        temperature: request.temperature,
+      }),
+    }),
+    getAssistantResponse: async request => {
+      const lastUserMessage = [...request.messages]
+        .reverse()
+        .find(m => m.role === "user");
+      if (!lastUserMessage) {
+        throw new Error("No user message found in request messages");
+      }
+
+      const output = await getChatEndpointResponse(
+        targetBaseUrl,
+        sessionId,
+        age,
+        lastUserMessage.content
+      );
+      return {output};
+    },
+    getJudgeResponse: async request => ({
+      output: await getStructuredResponse(
+        judgeModelSlug,
+        request.messages,
+        request.outputType,
+        {maxTokens: request.maxTokens}
+      ),
+    }),
+  };
+}
+
+export async function runCommand(
+  _program: Program,
+  judgeModelSlug: string,
+  userModelSlug: string,
+  targetModelSlug: string,
+  scenariosFilePath: string,
+  outputFilePath: string
+) {
+  const isUrl = isUrlTarget(targetModelSlug);
+  const standardContext = isUrl
+    ? undefined
+    : createStandardContext(judgeModelSlug, userModelSlug, targetModelSlug);
 
   const outputDir = path.dirname(outputFilePath);
   const tempDir = path.join(outputDir, ".kora-run-tmp");
@@ -115,13 +204,13 @@ export async function runCommand(
 
   await fs.mkdir(tempDir, {recursive: true});
 
-  const totalTests = await countTestTasks(scenariosFilePath);
+  const totalTests = await countTestTasks(scenariosFilePath, isUrl);
   const progress = Script.progress(totalTests, text =>
     process.stdout.write(text)
   );
 
   const {failureCount, testCount, runResult} = await pipeline(
-    () => scenariosToTestTasks(scenariosFilePath),
+    () => scenariosToTestTasks(scenariosFilePath, isUrl),
     flatTransform(10, async (task: TestTask): Promise<TaskOutcome[]> => {
       const tempFile = path.join(tempDir, taskTempFileName(task.key));
 
@@ -136,6 +225,16 @@ export async function runCommand(
       }
 
       try {
+        const context = isUrl
+          ? await createChatEndpointContext(
+              judgeModelSlug,
+              userModelSlug,
+              targetModelSlug,
+              task.key,
+              task.scenario
+            )
+          : standardContext!;
+
         const testResult = await kora.runTest(context, task.scenario, task.key);
         await fs.writeFile(tempFile, JSON.stringify(testResult));
         progress.increment(true);

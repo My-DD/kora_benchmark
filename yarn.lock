@@ -5,6 +5,18 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
+"@ai-sdk/anthropic@npm:^3.0.37":
+  version: 3.0.37
+  resolution: "@ai-sdk/anthropic@npm:3.0.37"
+  dependencies:
+    "@ai-sdk/provider": "npm:3.0.7"
+    "@ai-sdk/provider-utils": "npm:4.0.13"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/9803d4567775870f01e8a5bb1b05ae5f506e2cfb24ef9dd569716a0d7894f940056d58de81fe7188c692d82212b7462f0bedf167d4c27425ab940bd87bfc4363
+  languageName: node
+  linkType: hard
+
 "@ai-sdk/gateway@npm:3.0.32":
   version: 3.0.32
   resolution: "@ai-sdk/gateway@npm:3.0.32"
@@ -839,6 +851,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@korabench/benchmark@workspace:."
   dependencies:
+    "@ai-sdk/anthropic": "npm:^3.0.37"
     "@commander-js/extra-typings": "npm:^14.0.0"
     "@eslint/js": "npm:9.39.2"
     "@inquirer/prompts": "npm:^8.2.0"

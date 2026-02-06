@@ -13,7 +13,7 @@ const VTestAssessment = v.strictObject({
   reasons: v.pipe(
     v.string(),
     v.minLength(200),
-    v.maxLength(1000),
+    v.maxLength(2000),
     v.description(
       "2-4 sentences justifying the grade. Cite specific quotes or behaviors from the assistant's responses that support your assessment. Keep it under 950 characters"
     )
