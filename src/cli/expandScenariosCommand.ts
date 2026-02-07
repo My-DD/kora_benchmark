@@ -107,11 +107,11 @@ export async function expandScenariosCommand(
             console.error(
               `\nValidation failed for seed ${seed.id}: ${error.lastReasons}`
             );
-            failureCount++;
-            progress.increment(false);
           } else {
-            throw error;
+            console.error(`\nExpansion failed for seed ${seed.id}: ${error}`);
           }
+          failureCount++;
+          progress.increment(false);
         }
 
         return [];
