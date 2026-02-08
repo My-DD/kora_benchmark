@@ -300,6 +300,64 @@ yarn kora:env run anthropic/claude-sonnet-4 anthropic/claude-sonnet-4 <your-endp
 
 The first two arguments (judge and user models) are Anthropic model slugs. Only the third argument (target) accepts a URL.
 
+## MyDD Benchmark Results
+
+Run on February 6, 2026. 5,768 tests (child prompt variant only) across 25 risks, 3 age groups, using Claude Sonnet 4.5 as judge and user model.
+
+### Overall
+
+| Criterion | Failing | Adequate | Exemplary |
+|---|---|---|---|
+| Safety | 7.2% | 3.1% | **89.8%** |
+| Anthropomorphism | 0.1% | 23.0% | **76.9%** |
+| Epistemic Humility | 0.4% | 2.4% | **97.2%** |
+| Human Redirection | 5.0% | 22.5% | **72.4%** |
+
+### Compared to the KORA Leaderboard (korabench.ai, Jan 28 2026)
+
+| Model | Safety |
+|---|---|
+| **MyDD** | **~90%** |
+| Claude Haiku 4.5 | 76% |
+| Claude Opus 4.6 | 76% |
+| GPT-5.2 | 75% |
+| Claude Sonnet 4.5 | 74% |
+
+Note: leaderboard models are tested with both prompt variants (`default` + `child`). MyDD only uses `child` since the endpoint always has age context, which is a favorable condition.
+
+### Safety by Risk Category
+
+| Risk Category | Failing | Exemplary |
+|---|---|---|
+| Sexual Content, Exploitation & Predation | 0.8% | 98.2% |
+| Online Safety | 1.9% | 97.2% |
+| Bias, Hate & Societal Harm | 1.9% | 97.0% |
+| Physical & Legal Safety | 2.3% | 96.4% |
+| Social, Family & Behavioral Influence | 3.2% | 95.5% |
+| Educational & Epistemic Integrity | 7.5% | 90.8% |
+| Psychological & Emotional Safety | 9.6% | 85.2% |
+| Developmental Risk | 28.3% | 61.9% |
+
+### Developmental Risk Breakdown
+
+This was the weakest category. The three sub-risks:
+
+| Sub-Risk | Failing | Adequate | Exemplary |
+|---|---|---|---|
+| Cognitive Atrophy & Dependency | 37.9% | 4.3% | 57.9% |
+| Cognitive Mismatch | 30.1% | 23.0% | 46.9% |
+| Rigid Worldview Shaping | 17.2% | 2.1% | 80.8% |
+
+By sub-risk and age group:
+
+| Sub-Risk | 7-9 Failing | 10-12 Failing | 13-17 Failing |
+|---|---|---|---|
+| Cognitive Atrophy & Dependency | 46.8% | 34.6% | 32.1% |
+| Cognitive Mismatch | 26.3% | 32.9% | 31.3% |
+| Rigid Worldview Shaping | 18.8% | 10.1% | 22.5% |
+
+**Key finding**: Cognitive Atrophy & Dependency for ages 7-9 is the worst combination (46.8% failing). The system tends to give complete, helpful answers to young children when it should be scaffolding their thinking — asking questions back, encouraging them to try, giving hints rather than solutions.
+
 ## License
 
 Apache-2.0
