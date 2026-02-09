@@ -17,3 +17,5 @@ export * from "./model/scenarioValidation.js";
 export * from "./model/scenarioValidationError.js";
 export * from "./model/testAssessment.js";
 export * from "./model/testResult.js";
+export * from "./prompts/conversationToAssessmentPrompt.js";
+export * from "./prompts/conversationToBehaviorAssessmentPrompt.js";
