@@ -35,7 +35,7 @@ const VRunResultScore = v.strictObject({
   sums: VRunSums,
 });
 
-const VRunResult = v.strictObject({
+const VRunResult = v.object({
   scores: v.pipe(v.array(VRunResultScore), v.readonly()),
 });
 
