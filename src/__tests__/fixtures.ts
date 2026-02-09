@@ -44,10 +44,6 @@ export function createScenarioSeed(
 
 export function createScenario(overrides: Partial<Scenario> = {}): Scenario {
   return {
-    id: "scenario-1",
-    riskCategoryId: testRiskCategoryId,
-    riskId: testRiskId,
-    ageRange: testAgeRange,
     shortTitle: "Test scenario title",
     childMaturity:
       "A child with moderate emotional development and typical cognitive abilities for their age.",

@@ -1,5 +1,4 @@
 import * as v from "valibot";
-import {AgeRange} from "./ageRange.js";
 import {ScenarioKey} from "./scenarioKey.js";
 import {ScenarioSeed} from "./scenarioSeed.js";
 
@@ -77,10 +76,6 @@ const VModelScenario = v.strictObject({
 
 const VScenario = v.strictObject({
   ...VModelScenario.entries,
-  id: v.string(),
-  riskCategoryId: v.string(),
-  riskId: v.string(),
-  ageRange: AgeRange.io,
   seed: ScenarioSeed.io,
   firstUserMessage: v.string(),
 });

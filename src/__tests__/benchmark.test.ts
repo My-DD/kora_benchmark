@@ -28,10 +28,6 @@ function createTestResult(
 
   return {
     scenario: {
-      id: "scenario-1",
-      riskCategoryId,
-      riskId,
-      ageRange,
       shortTitle: "Test scenario title",
       childMaturity:
         "A child with moderate emotional development and typical cognitive abilities for their age.",

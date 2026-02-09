@@ -1,14 +1,14 @@
 #!/usr/bin/env npx tsx
 /**
- * Converts scenarioSeeds.json and scenarios.json from JSON array format to JSONL format.
- *
- * For scenarioSeeds.json: Flattens the grouped structure so each seed becomes its own line
- * with all metadata (riskCategoryId, riskId, ageRange, motivation) included directly.
- *
- * For scenarios.json: Each scenario object becomes one line.
+ * Converts scenarios.json from JSON array format to JSONL format, restructuring each
+ * scenario to match the Scenario type produced by the expand command — moving
+ * riskCategoryId, riskId, ageRange into the seed, adding motivation from the
+ * scenarioSeeds JSONL file, and removing extra top-level fields.
  */
+import {createReadStream} from "node:fs";
 import {readFile, writeFile} from "node:fs/promises";
 import path from "node:path";
+import * as readline from "node:readline";
 
 const dataDir = path.join(import.meta.dirname, "../data");
 
@@ -17,67 +17,88 @@ interface Motivation {
   description: string;
 }
 
-interface ScenarioSeedGroup {
-  riskCategoryId: string;
-  riskId: string;
-  ageRange: string;
-  motivation: Motivation;
-  seeds: Array<Record<string, unknown>>;
+async function loadSeedMotivations(
+  seedsJsonlPath: string
+): Promise<Map<string, Motivation>> {
+  const motivations = new Map<string, Motivation>();
+  const rl = readline.createInterface({
+    input: createReadStream(seedsJsonlPath),
+  });
+  for await (const line of rl) {
+    const trimmed = line.trim();
+    if (trimmed.length === 0) continue;
+    const seed = JSON.parse(trimmed) as {id: string; motivation: Motivation};
+    motivations.set(seed.id, seed.motivation);
+  }
+  return motivations;
 }
 
-interface FlattenedSeed {
-  riskCategoryId: string;
-  riskId: string;
-  ageRange: string;
-  motivation: Motivation;
-  [key: string]: unknown;
-}
-
-async function convertScenarioSeeds() {
-  const inputPath = path.join(dataDir, "scenarioSeeds.json");
-  const outputPath = path.join(dataDir, "scenarioSeeds.jsonl");
-
-  console.log("Converting scenarioSeeds.json to JSONL...");
-
-  const content = await readFile(inputPath, "utf-8");
-  const groups: ScenarioSeedGroup[] = JSON.parse(content);
-
-  // Flatten: each seed gets its own line with metadata included
-  const flattenedSeeds: FlattenedSeed[] = groups.flatMap(group =>
-    group.seeds.map(seed => ({
-      ...seed,
-      riskCategoryId: group.riskCategoryId,
-      riskId: group.riskId,
-      ageRange: group.ageRange,
-      motivation: group.motivation,
-    }))
-  );
-
-  const jsonlContent = flattenedSeeds.map(seed => JSON.stringify(seed)).join("\n") + "\n";
-  await writeFile(outputPath, jsonlContent);
-
-  console.log(`  Converted ${groups.length} groups (${flattenedSeeds.length} seeds) to ${outputPath}`);
-}
+const scenarioTopLevelKeys = new Set([
+  "shortTitle",
+  "childMaturity",
+  "childBackground",
+  "narrative",
+  "evaluationCriteria",
+  "modelMemory",
+  "seed",
+  "firstUserMessage",
+]);
 
 async function convertScenarios() {
   const inputPath = path.join(dataDir, "scenarios.json");
+  const seedsPath = path.join(dataDir, "scenarioSeeds.jsonl");
   const outputPath = path.join(dataDir, "scenarios.jsonl");
 
   console.log("Converting scenarios.json to JSONL...");
 
-  const content = await readFile(inputPath, "utf-8");
-  const scenarios: Array<Record<string, unknown>> = JSON.parse(content);
+  const [content, seedMotivations] = await Promise.all([
+    readFile(inputPath, "utf-8"),
+    loadSeedMotivations(seedsPath),
+  ]);
 
-  const jsonlContent = scenarios.map(scenario => JSON.stringify(scenario)).join("\n") + "\n";
+  const rawScenarios: Array<Record<string, unknown>> = JSON.parse(content);
+
+  const scenarios = rawScenarios.map(raw => {
+    const seed = raw["seed"] as Record<string, unknown>;
+    const seedId = seed["id"] as string;
+
+    const motivation = seedMotivations.get(seedId);
+    if (!motivation) {
+      throw new Error(`No motivation found for seed ${seedId}`);
+    }
+
+    // Build the full seed with fields moved from the top level.
+    const fullSeed = {
+      ...seed,
+      riskCategoryId: raw["riskCategoryId"],
+      riskId: raw["riskId"],
+      ageRange: raw["ageRange"],
+      motivation,
+    };
+
+    // Build the scenario with only the fields that belong on the Scenario type.
+    const scenario: Record<string, unknown> = {};
+    for (const key of Object.keys(raw)) {
+      if (scenarioTopLevelKeys.has(key)) {
+        scenario[key] = key === "seed" ? fullSeed : raw[key];
+      }
+    }
+
+    return scenario;
+  });
+
+  const jsonlContent =
+    scenarios.map(scenario => JSON.stringify(scenario)).join("\n") + "\n";
   await writeFile(outputPath, jsonlContent);
 
   console.log(`  Converted ${scenarios.length} scenarios to ${outputPath}`);
 }
 
 async function main() {
-  await convertScenarioSeeds();
   await convertScenarios();
-  console.log("\nDone! You can now delete the original .json files if desired.");
+  console.log(
+    "\nDone! You can now delete the original .json files if desired."
+  );
 }
 
 main().catch(err => {

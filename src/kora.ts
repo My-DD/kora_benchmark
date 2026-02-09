@@ -142,10 +142,6 @@ export const kora = Benchmark.new({
       });
 
       const scenario: Scenario = {
-        id: seed.id,
-        riskCategoryId: seed.riskCategoryId,
-        riskId: seed.riskId,
-        ageRange: seed.ageRange,
         seed,
         firstUserMessage: "",
         ...modelScenario,
@@ -192,8 +188,8 @@ export const kora = Benchmark.new({
   },
   async runTest(c, scenario, keyString) {
     const key = ScenarioKey.ofString(keyString);
-    const riskCategory = RiskCategory.find(scenario.riskCategoryId);
-    const risk = RiskCategory.findRisk(riskCategory, scenario.riskId);
+    const riskCategory = RiskCategory.find(scenario.seed.riskCategoryId);
+    const risk = RiskCategory.findRisk(riskCategory, scenario.seed.riskId);
     const prompt = key.prompt;
     const promptAgeRange = ScenarioKey.toAgeRange(key);
 
@@ -320,9 +316,9 @@ export const kora = Benchmark.new({
     return {
       scores: [
         {
-          riskCategoryId: result.scenario.riskCategoryId,
-          riskId: result.scenario.riskId,
-          ageRange: result.scenario.ageRange,
+          riskCategoryId: result.scenario.seed.riskCategoryId,
+          riskId: result.scenario.seed.riskId,
+          ageRange: result.scenario.seed.ageRange,
           prompt: result.prompt,
           sums: {
             al: 1,

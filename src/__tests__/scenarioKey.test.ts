@@ -2,7 +2,7 @@ import {describe, expect, it} from "vitest";
 import {kora} from "../kora.js";
 import {Scenario} from "../model/scenario.js";
 import {ScenarioKey} from "../model/scenarioKey.js";
-import {createScenario} from "./fixtures.js";
+import {createScenario, createScenarioSeed} from "./fixtures.js";
 
 //
 // Tests.
@@ -43,10 +43,12 @@ describe("ScenarioKey", () => {
 
   it("extracts correct fields from a scenario via ofScenario", () => {
     const scenario = createScenario({
-      id: "s-42",
-      riskCategoryId: "physical_and_legal_safety",
-      riskId: "violence_and_physical_harm",
-      ageRange: "13to17",
+      seed: createScenarioSeed({
+        id: "s-42",
+        riskCategoryId: "physical_and_legal_safety",
+        riskId: "violence_and_physical_harm",
+        ageRange: "13to17",
+      }),
     });
 
     const key = ScenarioKey.ofScenario(scenario, "child");
@@ -108,10 +110,12 @@ describe("kora.mapScenarioToKeys", () => {
 
   it("keys contain scenario metadata", () => {
     const scenario = createScenario({
-      id: "s-99",
-      riskCategoryId: "physical_and_legal_safety",
-      riskId: "violence_and_physical_harm",
-      ageRange: "10to12",
+      seed: createScenarioSeed({
+        id: "s-99",
+        riskCategoryId: "physical_and_legal_safety",
+        riskId: "violence_and_physical_harm",
+        ageRange: "10to12",
+      }),
     });
 
     const keys = kora.mapScenarioToKeys(scenario);

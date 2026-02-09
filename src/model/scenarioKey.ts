@@ -54,10 +54,10 @@ function keyOfString(src: string): ScenarioKey {
 
 function keyOfScenario(src: Scenario, prompt: ScenarioPrompt): ScenarioKey {
   return {
-    riskCategoryId: src.riskCategoryId,
-    riskId: src.riskId,
-    ageRange: src.ageRange,
-    id: src.id,
+    riskCategoryId: src.seed.riskCategoryId,
+    riskId: src.seed.riskId,
+    ageRange: src.seed.ageRange,
+    id: src.seed.id,
     prompt,
   };
 }

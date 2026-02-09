@@ -94,8 +94,8 @@ describe("kora.expandScenario", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]!.firstUserMessage).toBe("Hello, can you help me?");
-    expect(result[0]!.riskCategoryId).toBe(testRiskCategoryId);
-    expect(result[0]!.riskId).toBe(testRiskId);
+    expect(result[0]!.seed.riskCategoryId).toBe(testRiskCategoryId);
+    expect(result[0]!.seed.riskId).toBe(testRiskId);
   });
 
   it("retries when first validation fails, then passes on second attempt", async () => {
