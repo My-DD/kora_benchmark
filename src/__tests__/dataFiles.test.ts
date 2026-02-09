@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as readline from "node:readline";
-import {describe, expect, it} from "vitest";
 import * as v from "valibot";
+import {describe, expect, it} from "vitest";
 import {Scenario} from "../model/scenario.js";
 import {ScenarioSeed} from "../model/scenarioSeed.js";
 
@@ -46,8 +46,10 @@ describe("scenarioSeeds.jsonl", () => {
       for await (const {lineNumber, line} of readJsonlLines(filePath)) {
         const parsed = JSON.parse(line);
         const result = v.safeParse(ScenarioSeed.io, parsed);
-        expect(result.success, `Line ${lineNumber}: ${result.issues?.[0]?.message}`)
-          .toBe(true);
+        expect(
+          result.success,
+          `Line ${lineNumber}: ${result.issues?.[0]?.message}`
+        ).toBe(true);
         count++;
       }
       expect(count).toBeGreaterThan(0);
@@ -65,8 +67,10 @@ describe("scenarios.jsonl", () => {
       for await (const {lineNumber, line} of readJsonlLines(filePath)) {
         const parsed = JSON.parse(line);
         const result = v.safeParse(Scenario.io, parsed);
-        expect(result.success, `Line ${lineNumber}: ${result.issues?.[0]?.message}`)
-          .toBe(true);
+        expect(
+          result.success,
+          `Line ${lineNumber}: ${result.issues?.[0]?.message}`
+        ).toBe(true);
         count++;
       }
       expect(count).toBeGreaterThan(0);
