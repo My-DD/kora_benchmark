@@ -19,8 +19,8 @@
       }
     }
   },
-  "deepseek-v3": {
-    "model": "deepseek/deepseek-v3",
+  "deepseek-v3.2": {
+    "model": "deepseek/deepseek-v3.2",
     "maxTokens": 4000,
     "temperature": 0.5
   }

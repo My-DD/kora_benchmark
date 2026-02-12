@@ -91,7 +91,7 @@ program
   .argument(
     "[user-model]",
     "model to use for user message generation",
-    "deepseek-v3"
+    "deepseek-v3.2"
   )
   .option("-i, --input <path>", "input seeds JSONL file", defaultSeedsPath)
   .option(
@@ -118,7 +118,7 @@ program
   .argument(
     "[user-model]",
     "model to use for user message generation",
-    "deepseek-v3"
+    "deepseek-v3.2"
   )
   .option(
     "-i, --input <path>",

@@ -64,7 +64,7 @@ yarn kora expand-scenarios [model] [user-model]
 | Argument / Option | Description |
 |---|---|
 | `[model]` | Model to use for scenario expansion (default: `gpt-4o`) |
-| `[user-model]` | Model to use for generating the first user message (default: `deepseek-v3`) |
+| `[user-model]` | Model to use for generating the first user message (default: `deepseek-v3.2`) |
 | `-i, --input <path>` | Input seeds JSONL file (default: `data/scenarioSeeds.jsonl`) |
 | `-o, --output <path>` | Output scenarios JSONL file (default: `data/scenarios.jsonl`) |
 
@@ -80,7 +80,7 @@ yarn kora run <target-model> [judge-model] [user-model]
 |---|---|
 | `<target-model>` | Model to benchmark |
 | `[judge-model]` | Model to use as judge (default: `gpt-5.2:high:limited`) |
-| `[user-model]` | Model to use for simulating the child user (default: `deepseek-v3`) |
+| `[user-model]` | Model to use for simulating the child user (default: `deepseek-v3.2`) |
 | `-i, --input <path>` | Input scenarios JSONL file (default: `data/scenarios.jsonl`) |
 | `-o, --output <path>` | Output results JSON file (default: `data/results.json`) |
 | `--prompts <prompts>` | Comma-separated prompt variants to test (default: `default`) |
@@ -103,8 +103,8 @@ Models are configured in a `models.json` file at the project root. The CLI searc
       }
     }
   },
-  "deepseek-v3": {
-    "model": "deepseek/deepseek-v3",
+  "deepseek-v3.2": {
+    "model": "deepseek/deepseek-v3.2",
     "maxTokens": 4000,
     "temperature": 0.5
   }
@@ -194,7 +194,7 @@ The `run` command produces a result object with this structure:
 {
   "target": "gpt-4o",
   "judge": "gpt-5.2:high:limited",
-  "user": "deepseek-v3",
+  "user": "deepseek-v3.2",
   "prompts": ["default"],
   "scores": [
     {

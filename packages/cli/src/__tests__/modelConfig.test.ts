@@ -14,7 +14,7 @@ const testModels = {
       },
     },
   },
-  "deepseek-v3": {
+  "deepseek-v3.2": {
     model: "deepseek/deepseek-chat",
     maxTokens: 26000,
     temperature: 0.5,
@@ -46,7 +46,7 @@ describe("resolveModelConfig", () => {
   });
 
   it("resolves a model with temperature", () => {
-    expect(resolveModelConfig(tmpFile, "deepseek-v3")).toEqual({
+    expect(resolveModelConfig(tmpFile, "deepseek-v3.2")).toEqual({
       model: "deepseek/deepseek-chat",
       maxTokens: 26000,
       temperature: 0.5,
