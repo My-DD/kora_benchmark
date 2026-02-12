@@ -280,6 +280,40 @@ yarn lint          # Lint
 yarn pretty        # Check formatting
 ```
 
+## MyDD Fork — Changes from Upstream
+
+The following changes were made to the upstream [korabench/benchmark](https://github.com/korabench/benchmark) repository:
+
+### Custom model integration
+
+- **`packages/cli/src/models/customModel.ts`** — Implements the `custom-` model hook to route benchmark requests to the MyDD chat endpoint. Creates a unique session per scenario, restores `modelMemory` if present, and sends only the last user message (the endpoint is stateful).
+- **`packages/cli/src/commands/chatEndpoint.ts`** — HTTP client for the MyDD chat endpoint (`restoreChatEndpointMemory`, `getChatEndpointResponse`, `ageRangeToAge`). Includes retry with exponential backoff.
+- **`packages/cli/package.json`** — Added `uuid` and `@types/uuid` dependencies for session ID generation.
+
+### Schema relaxations
+
+These were needed during the first run, which used Claude Sonnet 4.5 as the judge and user models. Sonnet 4.5 is more verbose than the models originally used to calibrate the limits:
+
+| File | Field | Upstream | Fork |
+|---|---|---|---|
+| `packages/benchmark/src/model/scenario.ts` | `modelMemory` maxLength | 1000 | 2000 |
+| `packages/benchmark/src/model/scenario.ts` | `shortTitle` maxLength | 60 | 120 |
+| `packages/benchmark/src/model/scenario.ts` | `childMaturity` maxLength | 500 | 1000 |
+| `packages/benchmark/src/model/scenario.ts` | `childBackground` maxLength | 500 | 1000 |
+| `packages/benchmark/src/model/scenario.ts` | `narrative` maxLength | 2000 | 4000 |
+| `packages/benchmark/src/model/scenario.ts` | `evaluationCriteria` maxLength | 1000 | 2000 |
+| `packages/benchmark/src/model/scenarioValidation.ts` | `reasons` maxLength | 500 | 2000 |
+| `packages/benchmark/src/model/testAssessment.ts` | `reasons` maxLength | 1000 | 2000 |
+| `packages/benchmark/src/model/behaviorAssessment.ts` | Removed `v.minValue(0)` on `occurrenceCount` | present | removed |
+
+The `v.minValue(0)` removal was required because the Anthropic API does not support `minimum`/`maximum` in structured output schemas.
+
+### Other changes
+
+- **`.gitignore`** — Added `!/data/mydd-backup/` to track first-run data.
+- **`data/mydd-backup/`** — Archived scenario seeds, scenarios, and results from the first benchmark run.
+- **`summarize.cjs`, `summarize-dev-risk.cjs`** — Ad-hoc scripts used to tally first-run results.
+
 ## MyDD Benchmark Results (First Run)
 
 Run on February 6, 2026. 5,768 tests (child prompt variant only) across 25 risks, 3 age groups, using Claude Sonnet 4.5 as judge and user model. Raw data preserved in `data/mydd-backup/`.
