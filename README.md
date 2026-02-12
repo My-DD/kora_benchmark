@@ -8,32 +8,33 @@ KORA measures the safety of AI models interacting with children across 8 risk ca
 
 The benchmark uses a 3-stage pipeline: **seed generation** creates short scenario outlines from the risk taxonomy, **scenario expansion** turns each seed into a detailed test scenario with validation, and **test runs** execute multi-turn conversations and judge the results.
 
-Each test is a 3-turn conversation between a simulated child user and the target model. A judge model then evaluates the conversation on safety and on three behavioral criteria: anthropomorphism, epistemic humility, and human redirection. Every scenario is tested twice — once with no age context in the system prompt (`default`) and once with an age-aware system prompt (`child`).
+Each test is a 3-turn conversation between a simulated child user and the target model. A judge model then evaluates the conversation on safety and on three behavioral criteria: anthropomorphism, epistemic humility, and human redirection. Scenarios can be tested with different prompt variants — `default` (no age context in the system prompt) and `child` (age-aware system prompt) — controlled via the `--prompts` flag.
 
 ## Prerequisites
 
 - **Node.js 25+**
 - **Yarn**
-- **Anthropic API key** — set the `ANTHROPIC_API_KEY` environment variable (in `.env` or your shell).
+- **AI Gateway API key** — set the `AI_GATEWAY_API_KEY` environment variable for the AI SDK gateway. Copy `.env.example` to `.env` and fill in your key.
 
 ## Getting started
 
 Install dependencies and build:
 
 ```bash
+cp .env.example .env   # then add your API key
 yarn && yarn tsbuild
 ```
 
 Run the benchmark with pre-built scenarios:
 
 ```bash
-yarn kora run <judge-model> <user-model> <target-model>
+yarn kora run <target-model>
 ```
 
-For example, to evaluate `openai/gpt-4o` using `anthropic/claude-sonnet-4` as both judge and user model:
+For example, to evaluate `gpt-4o`:
 
 ```bash
-yarn kora run anthropic/claude-sonnet-4 anthropic/claude-sonnet-4 openai/gpt-4o
+yarn kora run gpt-4o
 ```
 
 ## Pipeline stages
@@ -43,57 +44,120 @@ yarn kora run anthropic/claude-sonnet-4 anthropic/claude-sonnet-4 openai/gpt-4o
 Generates a set of scenario seeds from the risk taxonomy.
 
 ```bash
-yarn kora generate-seeds <model> [output-path]
+yarn kora generate-seeds [model]
 ```
 
-| Argument | Description |
+| Argument / Option | Description |
 |---|---|
-| `<model>` | Model to use for seed generation |
-| `[output-path]` | Output JSONL file (default: `data/seeds.jsonl`) |
+| `[model]` | Model to use for seed generation (default: `gpt-5.2:high`) |
+| `-o, --output <path>` | Output JSONL file (default: `data/scenarioSeeds.jsonl`) |
+| `--seeds-per-task <count>` | Seeds per risk/age/motivation combination (default: `8`) |
 
 ### `expand-scenarios`
 
 Transforms seeds into fully fleshed-out scenarios with validation.
 
 ```bash
-yarn kora expand-scenarios <model> <user-model> [seeds-path] [output-path]
+yarn kora expand-scenarios [model] [user-model]
 ```
 
-| Argument | Description |
+| Argument / Option | Description |
 |---|---|
-| `<model>` | Model to use for scenario expansion |
-| `<user-model>` | Model to use for generating the first user message |
-| `[seeds-path]` | Input seeds JSONL file (default: `data/seeds.jsonl`) |
-| `[output-path]` | Output scenarios JSONL file (default: `data/scenarios.jsonl`) |
+| `[model]` | Model to use for scenario expansion (default: `gpt-4o`) |
+| `[user-model]` | Model to use for generating the first user message (default: `deepseek-v3.2`) |
+| `-i, --input <path>` | Input seeds JSONL file (default: `data/scenarioSeeds.jsonl`) |
+| `-o, --output <path>` | Output scenarios JSONL file (default: `data/scenarios.jsonl`) |
 
 ### `run`
 
 Runs the benchmark against the target model.
 
 ```bash
-yarn kora run <judge-model> <user-model> <target-model> [scenarios-path] [output-path]
+yarn kora run <target-model> [judge-model] [user-model]
 ```
 
-| Argument | Description |
+| Argument / Option | Description |
 |---|---|
-| `<judge-model>` | Model to use as judge |
-| `<user-model>` | Model to use for simulating the child user |
 | `<target-model>` | Model to benchmark |
-| `[scenarios-path]` | Input scenarios JSONL file (default: `data/scenarios.jsonl`) |
-| `[output-path]` | Output results JSON file (default: `data/results.json`) |
+| `[judge-model]` | Model to use as judge (default: `gpt-5.2:high:limited`) |
+| `[user-model]` | Model to use for simulating the child user (default: `deepseek-v3.2`) |
+| `-i, --input <path>` | Input scenarios JSONL file (default: `data/scenarios.jsonl`) |
+| `-o, --output <path>` | Output results JSON file (default: `data/results.json`) |
+| `--prompts <prompts>` | Comma-separated prompt variants to test (default: `default`) |
 
 All commands write to `data/` by default. Commands are restartable — progress is tracked via temp files so interrupted runs resume where they left off.
 
-## Model slugs
+## Model configuration
 
-Models are specified in `anthropic/model-name` format. Only Anthropic models are supported.
+### Model registry (`models.json`)
 
-Examples:
+Models are configured in a `models.json` file at the project root. The CLI searches for this file starting from the current directory and walking up. Each entry maps a **model slug** (used on the command line) to its configuration:
 
-- `anthropic/claude-sonnet-4`
-- `anthropic/claude-sonnet-4-5`
+```json
+{
+  "gpt-5.2:high": {
+    "model": "openai/gpt-5.2",
+    "providerOptions": {
+      "openai": {
+        "reasoningEffort": "high"
+      }
+    }
+  },
+  "deepseek-v3.2": {
+    "model": "deepseek/deepseek-v3.2",
+    "maxTokens": 4000,
+    "temperature": 0.5
+  }
+}
+```
 
-Authentication is handled via the `ANTHROPIC_API_KEY` environment variable.
+| Field | Required | Description |
+|---|---|---|
+| `model` | Yes | Provider/model identifier for the [AI SDK gateway](https://ai-sdk.dev/docs/ai-sdk-core/provider-management#ai-sdk-providers-gateway) (e.g. `openai/gpt-4o`) |
+| `maxTokens` | No | Maximum output tokens (default: 4000) |
+| `temperature` | No | Sampling temperature |
+| `providerOptions` | No | Provider-specific options passed through to the AI SDK |
+
+Authentication is handled via the `AI_GATEWAY_API_KEY` environment variable.
+
+### Custom models
+
+Model slugs that start with `custom-` bypass the AI SDK gateway and are routed to `packages/cli/src/models/customModel.ts`. This lets you integrate any model backend — a local server, a custom API, or a model behind a proprietary SDK.
+
+To add a custom model, edit `models/customModel.ts` and implement the `Model` interface:
+
+```ts
+export async function createCustomModel(modelSlug: string, _scenario: Scenario): Promise<Model> {
+  return {
+    async getTextResponse(request) {
+      // request.messages contains the conversation (system, user, assistant messages).
+      // request.maxTokens and request.temperature are optional hints.
+      // Return the model's text response.
+      throw new Error(`Custom model "${modelSlug}" is not implemented.`);
+    },
+
+    async getStructuredResponse(request) {
+      // request.outputType is the Valibot schema for the expected output.
+      // Return a parsed object matching the schema.
+      throw new Error(`Custom model "${modelSlug}" is not implemented.`);
+    },
+  };
+}
+```
+
+The factory receives:
+- `modelSlug` — the full slug (e.g. `custom-my-model`), so you can route to different backends.
+- `scenario` — the current `Scenario` being tested, available for context-aware implementations.
+
+Both `getTextResponse` and `getStructuredResponse` are available — custom models can serve as the target model and, with a structured response implementation, as the judge too.
+
+A new `Model` instance is created per scenario, so you can use the scenario data to customize behavior.
+
+Then use the slug on the command line like any other model:
+
+```bash
+yarn kora run custom-my-model
+```
 
 ## Evaluating a different model
 
@@ -128,6 +192,10 @@ The `run` command produces a result object with this structure:
 
 ```json
 {
+  "target": "gpt-4o",
+  "judge": "gpt-5.2:high:limited",
+  "user": "deepseek-v3.2",
+  "prompts": ["default"],
   "scores": [
     {
       "riskCategoryId": "...",
@@ -148,16 +216,22 @@ The `run` command produces a result object with this structure:
 
 | Field | Description |
 |---|---|
+| `target` | Target model slug |
+| `judge` | Judge model slug |
+| `user` | User model slug |
+| `prompts` | Prompt variants that were tested |
 | `sums.al` | Total test count |
 | `sums.as` | Safety grades: `[failing, adequate, exemplary]` |
 | `sums.an` | Anthropomorphism: `[failing, adequate, exemplary, occurrenceCount]` |
 | `sums.eh` | Epistemic humility: `[failing, adequate, exemplary, occurrenceCount]` |
 | `sums.hr` | Human redirection: `[failing, adequate, exemplary, occurrenceCount]` |
 
-Scores are grouped by risk category, risk, age range, and prompt variant. Two prompt variants are used:
+Scores are grouped by risk category, risk, age range, and prompt variant. Two prompt variants are available:
 
 - **`default`** — no age context in the system prompt.
 - **`child`** — the system prompt includes the child's age range.
+
+Use `--prompts default,child` to test both variants.
 
 ## Cost and duration
 
@@ -165,22 +239,36 @@ Each pipeline stage makes the following API calls:
 
 - **Seed generation**: 1 call per (risk x age range x motivation) combination = 25 x 3 x 10 = **750 calls**, producing 8 seeds each (6,000 seeds total).
 - **Scenario expansion**: 3–5 calls per seed (1 generate + 1 validate + 1 first user message on pass; up to 2 generate + 2 validate + 1 first user message on retry).
-- **Test run**: 7 calls per test (2 user responses + 3 target model responses + 2 judge responses), with 2 tests per scenario (`default` + `child`).
+- **Test run**: 7 calls per test (2 user responses + 3 target model responses + 2 judge responses), with 1 test per scenario per prompt variant.
 
 All commands run with a concurrency of 10 parallel tasks.
 
 ## Project structure
 
 ```
-src/
-  cli/           CLI command implementations
-  model/         Data types and validation schemas
-  prompts/       Prompt templates for each pipeline stage
-  __tests__/     Test suites
-  benchmark.ts   Core benchmark interface
-  kora.ts        KORA benchmark implementation
-  index.ts       Public API exports
-data/            Risk taxonomy, motivations, scenario data
+.env.example                         Environment variable template
+models.json                          Model registry configuration
+data/                                Scenario pipeline output (seeds, scenarios, results)
+packages/
+  benchmark/
+    data/                            Risk taxonomy and motivations (risks.json, motivations.json)
+    src/                             Core benchmark logic
+      prompts/                       Prompt templates for each pipeline stage
+      model/                         Domain types (scenario, risk, assessment, etc.)
+      __tests__/                     Test suites
+      benchmark.ts                   Core benchmark interface
+      generateUserMessage.ts         User message generation
+      kora.ts                        KORA benchmark implementation
+  cli/src/                           CLI package
+    commands/                        CLI command implementations
+    __tests__/                       CLI test suites
+    models/                          Model-related modules
+      model.ts                       Model interface definition
+      gatewayModel.ts                AI SDK gateway model implementation
+      modelConfig.ts                 Model registry loader
+      customModel.ts                 Custom model hook (edit to add your own)
+    retry.ts                         Retry with exponential backoff
+    cli.ts                           CLI entry point
 ```
 
 ## Development
@@ -192,117 +280,9 @@ yarn lint          # Lint
 yarn pretty        # Check formatting
 ```
 
-## MyDD Chat Endpoint Integration — Changelog
+## MyDD Benchmark Results (First Run)
 
-The following changes were made to support benchmarking the MyDD deployed chat endpoint as the target model, instead of calling an LLM directly via the Vercel AI SDK.
-
-### New file: `src/cli/chatEndpoint.ts`
-
-HTTP client for the MyDD chat endpoint. Three exports:
-
-- **`ageRangeToAge(ageRange: AgeRange): number`** — Converts the benchmark's age range strings to a representative integer age for the endpoint: `"7to9"` → `8`, `"10to12"` → `11`, `"13to17"` → `15`.
-
-- **`restoreChatEndpointMemory(baseUrl, sessionId, age, modelMemory)`** — POSTs to `/restore_session_memory` to pre-load a scenario's `modelMemory` into the endpoint's conversation history. The memory is injected as a synthetic two-message exchange (`user: <modelMemory>`, `assistant: "I'll keep that in mind."`).
-
-- **`getChatEndpointResponse(baseUrl, sessionId, age, prompt)`** — POSTs to `/query_chat_langchain_mem?session_id={sessionId}` with `{prompt, age}` in the body. Returns the `response` string from the JSON response.
-
-Both HTTP functions use an internal `fetchWithRetry` helper that retries up to 5 times with exponential backoff (1 s, 2 s, 4 s, 8 s, 16 s, capped at 30 s), matching the `maxRetries: 5` used by the existing Vercel AI SDK calls in `model.ts`.
-
-### Modified file: `src/cli/model.ts`
-
-Replaced the Vercel AI Gateway with the Anthropic provider SDK (`@ai-sdk/anthropic`), removing the need for a Vercel gateway key.
-
-- **Removed**: `gateway` import from `ai`.
-- **Added**: `createAnthropic` import from `@ai-sdk/anthropic`.
-- **New function: `resolveModel(modelSlug)`** — Parses a slug like `anthropic/claude-sonnet-4`, validates the `anthropic/` prefix, and returns an Anthropic provider model instance. Throws if the provider is not `anthropic`.
-- Both `getStructuredResponse` and `getTextResponse` now call `resolveModel(modelSlug)` instead of `gateway(modelSlug)`.
-
-### Modified file: `src/cli/runCommand.ts`
-
-#### New imports
-
-```ts
-import {v4 as uuid} from "uuid";
-import {ScenarioKey} from "../model/scenarioKey.js";
-import {ageRangeToAge, getChatEndpointResponse, restoreChatEndpointMemory} from "./chatEndpoint.js";
-```
-
-#### New function: `isUrlTarget(targetModelSlug)`
-
-Returns `true` when the target model slug starts with `http://` or `https://`, signalling the target is a chat endpoint URL rather than a Vercel AI SDK model slug.
-
-#### Modified function: `scenariosToTestTasks(filePath, skipDefault)`
-
-Added a second parameter `skipDefault: boolean`. When `true`, keys ending in `":default"` are skipped. The "default" prompt variant tests a model without age context, but the MyDD endpoint always requires an age parameter, so these tests are not applicable.
-
-#### Modified function: `countTestTasks(filePath, skipDefault)`
-
-Same `skipDefault` parameter added. When `true`, keys ending in `":default"` are excluded from the count so the progress bar total is accurate.
-
-#### New function: `createStandardContext(judgeModelSlug, userModelSlug, targetModelSlug)`
-
-Extracted from the inline `context` object that was previously defined at the top of `runCommand`. This is the original behavior — all three roles (user, assistant, judge) call the Vercel AI SDK. No behavioral change.
-
-#### New function: `createChatEndpointContext(judgeModelSlug, userModelSlug, targetBaseUrl, taskKey, scenario)`
-
-Creates a per-test `TestContext` for URL-based targets:
-
-1. Generates a unique `sessionId` in `{uuid}_{uuid}` format (matches the endpoint's required format).
-2. Parses the test key to extract `ageRange`, then maps it to an integer age via `ageRangeToAge`.
-3. If the scenario has `modelMemory`, calls `restoreChatEndpointMemory` to seed the conversation history before any test turns.
-4. `getUserResponse` and `getJudgeResponse` are identical to the standard context (Vercel AI SDK).
-5. `getAssistantResponse` extracts the last user message from the messages array and sends only that message to `getChatEndpointResponse`. The endpoint is stateful (it accumulates messages server-side), so sending the full history would cause duplication.
-
-#### Modified function: `runCommand`
-
-- At the top, checks `isUrlTarget(targetModelSlug)`. If `true`, `standardContext` is `undefined`; otherwise it is created once via `createStandardContext`.
-- Passes `isUrl` to both `countTestTasks` and `scenariosToTestTasks` as the `skipDefault` flag.
-- Inside the `flatTransform` callback: when `isUrl` is `true`, calls `createChatEndpointContext` to create a fresh context per test (ensuring session isolation). When `false`, uses the shared `standardContext` (original behavior).
-
-### Files NOT changed
-
-- **`src/cli.ts`** — No changes. The CLI argument parsing is the same; URL detection happens in `runCommand.ts`.
-- **`src/cli/model.ts`** — Modified (see above), but still used for user/judge roles even when the target is a URL.
-- **`src/kora.ts`** — No changes. The `runTest` function receives a `TestContext` and is unaware of whether the assistant response comes from the AI SDK or the chat endpoint.
-- **`src/benchmark.ts`** — No changes. The `TestContext` interface is unchanged.
-- **All other model types, prompts, seed generation, and scenario expansion** — No changes except `src/model/scenarioValidation.ts` (see below).
-- **One new dependency** — `@ai-sdk/anthropic` (replaces the Vercel AI Gateway). `uuid` was already in the project. Native `fetch` is used (Node 25+).
-
-### Schema `maxLength` increases across model types
-
-Sonnet 4.5 is more verbose than the model originally used to calibrate these limits, causing validation crashes during `expand-scenarios` and `run`. All `maxLength` constraints on model-generated fields were doubled to provide headroom:
-
-| File | Field | Old | New |
-|---|---|---|---|
-| `src/model/scenarioValidation.ts` | `reasons` | 500 | 2000 |
-| `src/model/scenario.ts` | `modelMemory` | 1000 | 2000 |
-| `src/model/scenario.ts` | `shortTitle` | 60 | 120 |
-| `src/model/scenario.ts` | `childMaturity` | 500 | 1000 |
-| `src/model/scenario.ts` | `childBackground` | 500 | 1000 |
-| `src/model/scenario.ts` | `narrative` | 2000 | 4000 |
-| `src/model/scenario.ts` | `evaluationCriteria` | 1000 | 2000 |
-| `src/model/behaviorAssessment.ts` | `reasons` | 500 | 1000 |
-| `src/model/testAssessment.ts` | `reasons` | 1000 | 2000 |
-
-### Modified file: `src/model/behaviorAssessment.ts`
-
-Removed `v.minValue(0)` from the `occurrenceCount` field. The Anthropic API does not support `minimum`/`maximum` properties in structured output schemas, causing all `run` tests to fail with `output_format.schema: For 'number' type, property 'minimum' is not supported`.
-
-### Usage
-
-```bash
-# Standard benchmark (direct Anthropic model)
-yarn kora:env run anthropic/claude-sonnet-4 anthropic/claude-sonnet-4 anthropic/claude-sonnet-4
-
-# MyDD endpoint benchmark
-yarn kora:env run anthropic/claude-sonnet-4 anthropic/claude-sonnet-4 <your-endpoint-url>
-```
-
-The first two arguments (judge and user models) are Anthropic model slugs. Only the third argument (target) accepts a URL.
-
-## MyDD Benchmark Results
-
-Run on February 6, 2026. 5,768 tests (child prompt variant only) across 25 risks, 3 age groups, using Claude Sonnet 4.5 as judge and user model.
+Run on February 6, 2026. 5,768 tests (child prompt variant only) across 25 risks, 3 age groups, using Claude Sonnet 4.5 as judge and user model. Raw data preserved in `data/mydd-backup/`.
 
 ### Overall
 
