@@ -2,9 +2,9 @@ import {ModelRequest, TypedModelRequest} from "@korabench/core";
 import {toJsonSchema} from "@valibot/to-json-schema";
 import {gateway, generateText, jsonSchema, Output} from "ai";
 import * as v from "valibot";
+import {createLogRetryHandler, RetryOptions, withRetry} from "../retry.js";
 import {Model} from "./model.js";
 import {resolveModelConfig} from "./modelConfig.js";
-import {createLogRetryHandler, RetryOptions, withRetry} from "./retry.js";
 
 export interface ModelOptions {
   retry?: RetryOptions;

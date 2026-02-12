@@ -135,9 +135,9 @@ program
     runCommand(
       program,
       modelsJsonPath,
+      targetModel,
       judgeModel,
       userModel,
-      targetModel,
       opts.input,
       opts.output,
       opts.prompts.split(",").map(p => v.parse(ScenarioPrompt.io, p.trim()))

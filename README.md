@@ -122,9 +122,9 @@ Authentication is handled via the `AI_GATEWAY_API_KEY` environment variable.
 
 ### Custom models
 
-Model slugs that start with `custom-` bypass the AI SDK gateway and are routed to `packages/cli/src/customModel.ts`. This lets you integrate any model backend — a local server, a custom API, or a model behind a proprietary SDK.
+Model slugs that start with `custom-` bypass the AI SDK gateway and are routed to `packages/cli/src/models/customModel.ts`. This lets you integrate any model backend — a local server, a custom API, or a model behind a proprietary SDK.
 
-To add a custom model, edit `customModel.ts` and implement the `Model` interface:
+To add a custom model, edit `models/customModel.ts` and implement the `Model` interface:
 
 ```ts
 export async function createCustomModel(modelSlug: string, _scenario: Scenario): Promise<Model> {
@@ -262,10 +262,11 @@ packages/
   cli/src/                           CLI package
     commands/                        CLI command implementations
     __tests__/                       CLI test suites
-    model.ts                         Model interface definition
-    gatewayModel.ts                  AI SDK gateway model implementation
-    modelConfig.ts                   Model registry loader
-    customModel.ts                   Custom model hook (edit to add your own)
+    models/                          Model-related modules
+      model.ts                       Model interface definition
+      gatewayModel.ts                AI SDK gateway model implementation
+      modelConfig.ts                 Model registry loader
+      customModel.ts                 Custom model hook (edit to add your own)
     retry.ts                         Retry with exponential backoff
     cli.ts                           CLI entry point
 ```

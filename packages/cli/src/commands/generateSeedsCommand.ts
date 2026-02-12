@@ -7,7 +7,7 @@ import {Script} from "@korabench/core";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import {Program} from "../cli.js";
-import {createGatewayModel} from "../gatewayModel.js";
+import {createGatewayModel} from "../models/gatewayModel.js";
 
 export async function generateSeeds(
   _program: Program,

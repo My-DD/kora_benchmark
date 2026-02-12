@@ -14,9 +14,9 @@ import * as readline from "node:readline";
 import {flatTransform, pipeline, reduce} from "streaming-iterables";
 import * as v from "valibot";
 import {Program} from "../cli.js";
-import {createCustomModel} from "../customModel.js";
-import {createGatewayModel} from "../gatewayModel.js";
-import {Model} from "../model.js";
+import {createCustomModel} from "../models/customModel.js";
+import {createGatewayModel} from "../models/gatewayModel.js";
+import {Model} from "../models/model.js";
 
 interface TestTask {
   scenario: Scenario;
@@ -136,9 +136,9 @@ async function buildContext(
 export async function runCommand(
   _program: Program,
   modelsJsonPath: string,
+  targetModelSlug: string,
   judgeModelSlug: string,
   userModelSlug: string,
-  targetModelSlug: string,
   scenariosFilePath: string,
   outputFilePath: string,
   prompts: readonly ScenarioPrompt[]

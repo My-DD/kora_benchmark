@@ -12,7 +12,7 @@ import * as readline from "node:readline";
 import {consume, flatTransform} from "streaming-iterables";
 import * as v from "valibot";
 import {Program} from "../cli.js";
-import {createGatewayModel} from "../gatewayModel.js";
+import {createGatewayModel} from "../models/gatewayModel.js";
 
 async function* readSeedsFromJsonl(
   filePath: string
