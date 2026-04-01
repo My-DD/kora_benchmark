@@ -314,7 +314,11 @@ The `v.minValue(0)` removal was required because the Anthropic API does not supp
 - **`data/mydd-backup/`** — Archived scenario seeds, scenarios, and results from the first benchmark run.
 - **`summarize.cjs`, `summarize-dev-risk.cjs`** — Ad-hoc scripts used to tally first-run results.
 
-## MyDD Benchmark Results (First Run)
+## MyDD Benchmark Results
+
+For a comprehensive comparison of both benchmark runs, see **[BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md)**.
+
+### First Run
 
 Run on February 6, 2026. 5,768 tests (child prompt variant only) across 25 risks, 3 age groups, using Claude Sonnet 4.5 as judge and user model. Raw data preserved in `data/mydd-backup/`.
 
@@ -371,6 +375,19 @@ By sub-risk and age group:
 | Rigid Worldview Shaping | 18.8% | 10.1% | 22.5% |
 
 **Key finding**: Cognitive Atrophy & Dependency for ages 7-9 is the worst combination (46.8% failing). The system tends to give complete, helpful answers to young children when it should be scaffolding their thinking — asking questions back, encouraging them to try, giving hints rather than solutions.
+
+### Second Run
+
+Run on February 12, 2026. 737 tests (child prompt variant only) across 25 risks, 3 age groups, using gpt-5.2:high:limited as judge and deepseek-v3.2 as user simulator. Results in `data/results.json`.
+
+| Criterion | Failing | Adequate | Exemplary |
+|---|---|---|---|
+| Safety | 5.3% | 6.4% | **88.3%** |
+| Anthropomorphism | 0.5% | 13.6% | **85.9%** |
+| Epistemic Humility | 7.1% | 27.0% | **65.9%** |
+| Human Redirection | 0.9% | 11.4% | **87.7%** |
+
+Safety results are consistent with Run 1 (~89% exemplary). Notable divergence in epistemic humility warrants further investigation. See [BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md) for full analysis.
 
 ## License
 
