@@ -1,85 +1,151 @@
-# Reproduce: Run 1 judge/user (Claude Sonnet) × Run 2 test set (737)
+# Reproduce: Run 1 judge/user (Claude Sonnet, direct) × small batch (737 tests)
 
-This runs the KORA benchmark against the MyDD endpoint using:
+This is a step-by-step guide to run the KORA benchmark against the MyDD endpoint using:
 
-- **Test set:** the 737 scenarios from Run 2 (`data/scenarios.jsonl`, `child` prompt only)
-- **Judge + user:** Claude Sonnet (the model family used in Run 1), routed through the Vercel AI Gateway
+- **Test set:** the **small batch** — the 737 scenarios from Run 2 (`data/scenarios.jsonl`, `child` prompt only)
+- **Judge + user:** Claude Sonnet, called **directly via the Anthropic API** (the way Run 1 ran — **no Vercel AI Gateway**)
 - **Target:** `custom-mydd` (the MyDD chat endpoint)
 
-> **Fidelity note.** Run 1 called Claude *directly* via the Anthropic API (old `createAnthropic()` code). The current codebase only supports the Vercel AI Gateway, so this routes the *same Sonnet model* through the gateway instead. Same model, different transport/auth. Reproducing the original direct-Anthropic path would require reverting the model layer and is not recommended.
+> **No gateway needed.** Slugs that start with `anthropic/` go straight to the Anthropic API (`ANTHROPIC_API_KEY`), bypassing the Vercel AI Gateway and `models.json`. The `custom-mydd` target talks to the MyDD endpoint directly. So this run uses **no `AI_GATEWAY_API_KEY` at all**.
 
 ---
 
-## What "the 737 tests from Run 2" means
+## 0. Prerequisites
 
-`data/scenarios.jsonl` contains exactly **737 scenarios** (25 risks × 3 age groups, ~10 each). Running it with `--prompts child` produces 737 tests — that *is* the Run 2 set. Do not regenerate seeds/scenarios; use this file as-is.
+You need these installed and on hand before starting:
+
+- **Node.js 25+** — check with `node --version` (repo targets `v25.2.1`; see `.nvmrc`)
+- **Yarn** — check with `yarn --version`
+- **git** with access to the `My-DD/kora_benchmark` GitHub repo
+- An **Anthropic API key** (for the judge + user models)
+- The **MyDD endpoint URL** (the API being benchmarked, e.g. `https://mydd-dev.fly.dev`)
+
+If `node --version` is below 25, install Node 25+ first (e.g. via `nvm install 25 && nvm use 25`).
 
 ---
 
-## Prerequisites
+## 1. Get the latest code from GitHub
 
-- Node.js **25+** and **Yarn**
-- A **Vercel AI Gateway** API key (the gateway can route both Anthropic and the user model)
-- The **MyDD endpoint URL** (the API to benchmark)
+**If you do NOT have the repo yet** — clone it:
+
+```bash
+git clone git@github.com:My-DD/kora_benchmark.git
+cd kora_benchmark
+```
+
+**If you ALREADY have the repo** — pull the latest `main`:
+
+```bash
+cd kora_benchmark
+git checkout main
+git pull origin main
+```
+
+Confirm you're on `main` and up to date:
+
+```bash
+git status        # should say "On branch main" / "up to date"
+git log --oneline -3
+```
+
+The direct-Anthropic routing lives in `packages/cli/src/models/anthropicModel.ts` — if that file is missing, you don't have the latest code; re-run the pull.
 
 ---
 
-## Steps
+## 2. Add your API keys to a `.env` file
 
-### 1. Configure environment
+Create the `.env` from the template:
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` so it contains:
+Open `.env` in an editor and set these two values:
 
 ```
-AI_GATEWAY_API_KEY=<your Vercel AI Gateway key>
-MYDD_ENDPOINT_URL=<the MyDD API base URL>
+ANTHROPIC_API_KEY=sk-ant-...your Anthropic key...
+MYDD_ENDPOINT_URL=https://mydd-dev.fly.dev
 ```
 
-`AI_GATEWAY_API_KEY` powers the judge and user models. `MYDD_ENDPOINT_URL` is the API being tested (the `custom-mydd` target POSTs to `/query_chat_langchain_mem`).
+Notes:
 
-### 2. Add the Sonnet model to `models.json`
+- Replace the `MYDD_ENDPOINT_URL` value with the actual MyDD API base URL you're testing (no trailing slash needed).
+- `AI_GATEWAY_API_KEY` may already be in the file — **leave it as-is or blank; it is not used for this run.**
+- `.env` is gitignored — your keys are never committed. Do not paste real keys into any other file.
 
-Add this entry to `models.json` at the repo root:
+---
 
-```json
-"claude-sonnet": {
-  "model": "anthropic/claude-sonnet-4.5"
-}
-```
-
-> Model slugs must exist in `models.json` — raw `provider/model` strings are rejected. Bump to a newer Sonnet (e.g. `anthropic/claude-sonnet-4.6`) if you prefer; keep judge and user identical, as Run 1 did.
-
-### 3. Install and build
+## 3. Install dependencies and build
 
 ```bash
-yarn && yarn tsbuild
+yarn
+yarn tsbuild
 ```
 
-### 4. Run the benchmark
+`yarn` installs packages; `yarn tsbuild` compiles the TypeScript. Both must finish without errors before running. No `models.json` edit is needed — `anthropic/...` judge/user slugs skip the registry entirely.
+
+---
+
+## 4. Run the small batch (737 tests)
 
 ```bash
-yarn kora run custom-mydd claude-sonnet claude-sonnet \
+yarn kora:env run custom-mydd \
+  anthropic/claude-sonnet-4.5 \
+  anthropic/claude-sonnet-4.5 \
   -i data/scenarios.jsonl \
   --prompts child \
   -o data/results-sonnet-judge.json
 ```
 
-Argument order is `run <target> [judge] [user]`. Here target = `custom-mydd`, and **both judge and user = `claude-sonnet`** (matching Run 1, which used the same model for both).
+> Use **`kora:env`** (not `kora`) — it loads the `.env` file via `--env-file=.env` so your `ANTHROPIC_API_KEY` and `MYDD_ENDPOINT_URL` are picked up. Plain `yarn kora` does **not** read `.env`; with it you'd have to `export` the variables in your shell first.
 
-The run is restartable — progress is tracked in `data/.kora-run-tmp`, so re-running resumes where it left off.
+What each piece means:
 
-### 5. Review results
+| Part | Meaning |
+|---|---|
+| `custom-mydd` | **target** — the model being tested (routes to the MyDD endpoint) |
+| `anthropic/claude-sonnet-4.5` (1st) | **judge** model — direct Anthropic |
+| `anthropic/claude-sonnet-4.5` (2nd) | **user** simulator model — direct Anthropic |
+| `-i data/scenarios.jsonl` | the **small batch** input: 737 scenarios |
+| `--prompts child` | use the age-aware prompt only (so 737 scenarios = 737 tests) |
+| `-o data/results-sonnet-judge.json` | where aggregated results are written |
 
-Aggregated scores land in `data/results-sonnet-judge.json` (with `target`/`judge`/`user`/`prompts` metadata). Compare against `data/results.json` (Run 2, gpt-5.2 judge) to see how the judge change moves the numbers.
+Judge and user use the **same** model, matching Run 1. To use a different Sonnet, change both ids together (e.g. `anthropic/claude-sonnet-4.6`).
+
+**Progress and restarts:** the run prints a progress bar and writes per-test temp files to `data/.kora-run-tmp/`. If it's interrupted or some tests fail, just re-run the exact same command — it resumes where it left off. The run is complete when it prints `Completed <N> tests → data/results-sonnet-judge.json`.
+
+---
+
+## 5. Review the results
+
+Aggregated scores are in `data/results-sonnet-judge.json`, including `target` / `judge` / `user` / `prompts` metadata at the top. Compare against `data/results.json` (the original Run 2, which used the gpt-5.2 judge via the gateway) to see how switching to a direct Sonnet judge moves the safety and behavioral grades.
+
+---
+
+## How the no-gateway routing works
+
+| Slug pattern | Routed to | Auth |
+|---|---|---|
+| `anthropic/<model-id>` | Anthropic API directly (`models/anthropicModel.ts`) | `ANTHROPIC_API_KEY` |
+| `custom-*` | MyDD endpoint (`models/customModel.ts`) | `MYDD_ENDPOINT_URL` |
+| anything else | Vercel AI Gateway via `models.json` | `AI_GATEWAY_API_KEY` |
+
+The first two paths need no gateway, so a fully-direct run (Anthropic judge/user + `custom-mydd` target) never touches Vercel.
+
+---
+
+## Troubleshooting
+
+- **`requires the ANTHROPIC_API_KEY environment variable`** — `ANTHROPIC_API_KEY` is missing/blank in `.env`, or you ran `yarn kora` instead of `yarn kora:env` (only `kora:env` loads `.env`).
+- **`requires the MYDD_ENDPOINT_URL environment variable`** — set `MYDD_ENDPOINT_URL` in `.env`.
+- **`Unknown model "..."`** — a non-`anthropic/`, non-`custom-` slug was passed and isn't in `models.json`. Check the command's model arguments.
+- **`anthropicModel.ts` not found / build errors about it** — you're on stale code; redo step 1 (`git pull origin main`) then `yarn && yarn tsbuild`.
+- **Model id rejected by Anthropic** — adjust the model id (e.g. a dated snapshot like `anthropic/claude-sonnet-4-5-YYYYMMDD`) to one your Anthropic account can access.
 
 ---
 
 ## Prompt you can paste into Claude Code
 
-> In this KORA benchmark repo, run the 737-scenario Run 2 test set (`data/scenarios.jsonl`, `child` prompt only) against the `custom-mydd` target, using Claude Sonnet as **both** judge and user. Add a `claude-sonnet` → `anthropic/claude-sonnet-4.5` entry to `models.json`, make sure `.env` has `AI_GATEWAY_API_KEY` and `MYDD_ENDPOINT_URL` set, then `yarn && yarn tsbuild` and run:
-> `yarn kora run custom-mydd claude-sonnet claude-sonnet -i data/scenarios.jsonl --prompts child -o data/results-sonnet-judge.json`
+> In this KORA benchmark repo, run the small batch (737-scenario Run 2 set: `data/scenarios.jsonl`, `child` prompt only) against the `custom-mydd` target, using Claude Sonnet as **both** judge and user, called **directly via the Anthropic API (no Vercel gateway)**. First `git pull origin main`. Make sure `.env` has `ANTHROPIC_API_KEY` and `MYDD_ENDPOINT_URL` set, then `yarn && yarn tsbuild` and run:
+> `yarn kora:env run custom-mydd anthropic/claude-sonnet-4.5 anthropic/claude-sonnet-4.5 -i data/scenarios.jsonl --prompts child -o data/results-sonnet-judge.json`
 > Then summarize the safety + behavioral grades and compare them to `data/results.json`.

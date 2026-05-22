@@ -15,6 +15,7 @@
     "kora": "./build/src/cli.js"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.78",
     "@korabench/benchmark": "workspace:*",
     "@korabench/core": "^1.0.6",
     "@valibot/to-json-schema": "^1.5.0",

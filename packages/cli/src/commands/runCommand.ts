@@ -14,9 +14,24 @@ import * as readline from "node:readline";
 import {flatTransform, pipeline, reduce} from "streaming-iterables";
 import * as v from "valibot";
 import {Program} from "../cli.js";
+import {
+  createAnthropicModel,
+  isAnthropicDirectSlug,
+} from "../models/anthropicModel.js";
 import {createCustomModel} from "../models/customModel.js";
 import {createGatewayModel} from "../models/gatewayModel.js";
 import {Model} from "../models/model.js";
+
+// Route "anthropic/<model-id>" slugs directly to the Anthropic API (no gateway);
+// everything else resolves through models.json via the Vercel AI Gateway.
+function createJudgeOrUserModel(
+  modelsJsonPath: string,
+  modelSlug: string
+): Model {
+  return isAnthropicDirectSlug(modelSlug)
+    ? createAnthropicModel(modelSlug)
+    : createGatewayModel(modelsJsonPath, modelSlug);
+}
 
 interface TestTask {
   scenario: Scenario;
@@ -147,8 +162,8 @@ export async function runCommand(
     `Running benchmark: target=${targetModelSlug}, judge=${judgeModelSlug}, user=${userModelSlug}`
   );
 
-  const judgeModel = createGatewayModel(modelsJsonPath, judgeModelSlug);
-  const userModel = createGatewayModel(modelsJsonPath, userModelSlug);
+  const judgeModel = createJudgeOrUserModel(modelsJsonPath, judgeModelSlug);
+  const userModel = createJudgeOrUserModel(modelsJsonPath, userModelSlug);
   const targetGatewayModel = targetModelSlug.startsWith("custom-")
     ? undefined
     : createGatewayModel(modelsJsonPath, targetModelSlug);

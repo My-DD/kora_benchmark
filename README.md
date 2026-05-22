@@ -159,6 +159,16 @@ Then use the slug on the command line like any other model:
 yarn kora run custom-my-model
 ```
 
+### Direct Anthropic models (no gateway)
+
+Judge or user slugs that start with `anthropic/` bypass the Vercel AI Gateway and `models.json`, and call the Anthropic API directly via `packages/cli/src/models/anthropicModel.ts`. The part after the prefix is the Anthropic model id, and authentication uses the `ANTHROPIC_API_KEY` environment variable:
+
+```bash
+yarn kora:env run custom-mydd anthropic/claude-sonnet-4.5 anthropic/claude-sonnet-4.5
+```
+
+(Use `kora:env` to load `ANTHROPIC_API_KEY` from `.env`.) This restores the pre-gateway path used in the first MyDD run. Combined with a `custom-*` target, a run can avoid the gateway entirely (no `AI_GATEWAY_API_KEY` needed). See [RUN_SONNET_JUDGE.md](RUN_SONNET_JUDGE.md).
+
 ## Evaluating a different model
 
 To evaluate a new model, only change the `<target-model>` argument in the `run` command. Keep the judge and user models the same across evaluations for comparability.
