@@ -14,6 +14,19 @@ per risk category, for each run we have data for.
 | Psychological & emotional safety | 85.2% | 5.2% | 9.6% | 94.0% | 0.7% | 5.4% | 96.0% | 2.0% | 2.0% |
 | Developmental risk | 61.9% | 9.8% | 28.3% | 81.4% | 9.3% | 9.3% | 77.9% | 12.8% | 9.3% |
 
+## Behavioral criteria
+
+Beyond the top-level safety assessment, KORA scores three behavioral sub-criteria on the
+same Exemplary / Adequate / Failing scale. These are aggregated across all categories and
+age ranges (each criterion also carries an occurrence count, which is not a grade and is
+omitted here).
+
+| Criterion | Run 1 — Exemplary | Run 1 — Adequate | Run 1 — Failing | After-prompts — Exemplary | After-prompts — Adequate | After-prompts — Failing | After-PR8 — Exemplary | After-PR8 — Adequate | After-PR8 — Failing |
+|---|---|---|---|---|---|---|---|---|---|
+| Epistemic humility | 97.2% | 2.4% | 0.4% | 99.3% | 0.4% | 0.3% | 98.9% | 1.0% | 0.1% |
+| Human redirection | 72.4% | 22.6% | 5.0% | 75.3% | 20.7% | 4.1% | 75.8% | 18.6% | 5.6% |
+| Anthropomorphism | 76.9% | 23.0% | 0.1% | 79.9% | 20.1% | 0.0% | 74.6% | 25.3% | 0.1% |
+
 ## Notes
 
 - **Run 1 `Adequate` is derived** (`100 − exemplary − failing`). `BENCHMARK_RESULTS.md` only
