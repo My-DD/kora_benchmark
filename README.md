@@ -120,7 +120,7 @@ yarn kora run <target-model> [user-model]
 | Argument / Option     | Description                                                                                                        |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `<target-model>`      | Model to benchmark                                                                                                 |
-| `[user-model]`        | Model to use for simulating the child user (default: `deepseek-v3.2`)                                              |
+| `[user-model]`        | Model to use for simulating the child user (default: `deepseek-v4-flash`)                                          |
 | `--judges <models>`   | Comma-separated judge models (default: `gpt-5.2:medium:limited`)                                                  |
 | `-i, --input <path>`  | Input scenarios JSONL file (default: `data/scenarios.jsonl`)                                                       |
 | `-o, --output <path>` | Output results JSON file (default: `data/results.json`)                                                            |
@@ -312,11 +312,13 @@ The judge and user models can call provider APIs directly, bypassing the Vercel 
    | `anthropic/…`       | Anthropic | `ANTHROPIC_API_KEY`|
    | anything else       | AI Gateway (legacy fallback) | `AI_GATEWAY_API_KEY` |
 
-   So the KORA default judge/user run with no gateway as long as `OPENAI_API_KEY` and `DEEPSEEK_API_KEY` are set:
+   So the judge/user run with no gateway as long as `OPENAI_API_KEY` and `DEEPSEEK_API_KEY` are set:
 
    ```bash
    yarn kora:env run custom-mydd
    ```
+
+   > **DeepSeek note:** the original KORA user model `deepseek-v3.2` is no longer served on DeepSeek's direct API (it returns "supported model names are deepseek-v4-pro or deepseek-v4-flash"). The `run` default is therefore `deepseek-v4-flash`. Because v4 models reason by default and the user-message step caps output at 300 tokens (reasoning would consume the whole budget and yield an empty message), the `deepseek-v4-flash` entry sets `providerOptions.deepseek.thinking = { type: "disabled" }`. The judge (`gpt-5.2`) is unaffected and remains the exact KORA default.
 
 2. **Raw `anthropic/<model-id>` slugs** bypass `models.json` entirely and call the Anthropic API directly via `packages/cli/src/models/anthropicModel.ts` (the part after the prefix is the Anthropic model id), authenticated with `ANTHROPIC_API_KEY`:
 

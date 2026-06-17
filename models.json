@@ -111,6 +111,16 @@
     "maxTokens": 4000,
     "temperature": 1.3
   },
+  "deepseek-v4-flash": {
+    "model": "deepseek/deepseek-v4-flash",
+    "maxTokens": 4000,
+    "temperature": 1.3,
+    "providerOptions": {
+      "deepseek": {
+        "thinking": { "type": "disabled" }
+      }
+    }
+  },
   "deepseek-v4-pro": {
     "model": "deepseek/deepseek-v4-pro",
     "maxTokens": 4000,

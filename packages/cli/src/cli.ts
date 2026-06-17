@@ -235,7 +235,7 @@ program
   .argument(
     "[user-model]",
     "model to use for user message generation",
-    "deepseek-v3.2"
+    "deepseek-v4-flash"
   )
   .option(
     "--judges <models>",
