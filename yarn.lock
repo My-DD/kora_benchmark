@@ -17,6 +17,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ai-sdk/deepseek@npm:^2.0.39":
+  version: 2.0.39
+  resolution: "@ai-sdk/deepseek@npm:2.0.39"
+  dependencies:
+    "@ai-sdk/provider": "npm:3.0.10"
+    "@ai-sdk/provider-utils": "npm:4.0.30"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/dc90e5594f43318a3a2cf6d2b211e14d26a1515275d8ff4a050de087c45c9f5c891e9eb2ed6a8048a0c0747d2b5a295bdb288183f5fc3242e34a2da1a747e125
+  languageName: node
+  linkType: hard
+
 "@ai-sdk/gateway@npm:3.0.41":
   version: 3.0.41
   resolution: "@ai-sdk/gateway@npm:3.0.41"
@@ -27,6 +39,18 @@ __metadata:
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
   checksum: 10c0/3b91f3f05140c755e259a5541e943b527c54f41ad3f390083159e9df909554c88d07e1d4cd75f002e92a2098e490f2621586feb39d5020253fcee50a44846215
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/openai@npm:^3.0.72":
+  version: 3.0.72
+  resolution: "@ai-sdk/openai@npm:3.0.72"
+  dependencies:
+    "@ai-sdk/provider": "npm:3.0.10"
+    "@ai-sdk/provider-utils": "npm:4.0.30"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/5e10e41796e4e4ab9331689749e062cbf4bd480087ba3a1ff868ef348bcd2b18876ead8aac81a205a37e21898cd4df0c9dd8cfe09f533c032a983a524f7a0547
   languageName: node
   linkType: hard
 
@@ -53,6 +77,19 @@ __metadata:
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
   checksum: 10c0/2202dedcbe8f58883ef37425111392c6b5b5c2f85dfbbd11b13173e9d349da3d977ba610586c4b5412720e07b09f63ba0e88dbc6e21f043441a67f6d51225020
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/provider-utils@npm:4.0.30":
+  version: 4.0.30
+  resolution: "@ai-sdk/provider-utils@npm:4.0.30"
+  dependencies:
+    "@ai-sdk/provider": "npm:3.0.10"
+    "@standard-schema/spec": "npm:^1.1.0"
+    eventsource-parser: "npm:^3.0.8"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/4195612c0da1a634ca11043cbfed8e328c9177fc7289b533653529458163e944398539e53f1a689c6ffdf0f728e25b6cc9c927cfc2fe95e80ed22ae008a8053d
   languageName: node
   linkType: hard
 
@@ -650,6 +687,8 @@ __metadata:
   resolution: "@korabench/cli@workspace:packages/cli"
   dependencies:
     "@ai-sdk/anthropic": "npm:^3.0.78"
+    "@ai-sdk/deepseek": "npm:^2.0.39"
+    "@ai-sdk/openai": "npm:^3.0.72"
     "@commander-js/extra-typings": "npm:14.0.0"
     "@korabench/benchmark": "workspace:*"
     "@korabench/core": "npm:^1.0.6"

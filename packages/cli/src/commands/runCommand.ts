@@ -12,6 +12,10 @@ import {
   createAnthropicModel,
   isAnthropicDirectSlug,
 } from "../models/anthropicModel.js";
+import {
+  createDirectModel,
+  isDirectProviderSlug,
+} from "../models/directModel.js";
 import {createGatewayModel} from "../models/gatewayModel.js";
 import {Model} from "../models/model.js";
 import {
@@ -19,15 +23,22 @@ import {
   resolveTargetGatewayModel,
 } from "./shared/buildContext.js";
 
-// Route "anthropic/<model-id>" slugs directly to the Anthropic API (no gateway);
-// everything else resolves through models.json via the Vercel AI Gateway.
+// Resolve a judge/user model without the Vercel AI Gateway when possible:
+//   - "anthropic/<model-id>" raw slugs  -> Anthropic API directly.
+//   - models.json slugs whose provider has a direct path (openai, deepseek,
+//     anthropic) -> that provider's API directly, reusing the slug's config.
+//   - anything else                      -> the gateway (legacy fallback).
 function createJudgeOrUserModel(
   modelsJsonPath: string,
   modelSlug: string
 ): Model {
-  return isAnthropicDirectSlug(modelSlug)
-    ? createAnthropicModel(modelSlug)
-    : createGatewayModel(modelsJsonPath, modelSlug);
+  if (isAnthropicDirectSlug(modelSlug)) {
+    return createAnthropicModel(modelSlug);
+  }
+  if (isDirectProviderSlug(modelsJsonPath, modelSlug)) {
+    return createDirectModel(modelsJsonPath, modelSlug);
+  }
+  return createGatewayModel(modelsJsonPath, modelSlug);
 }
 
 interface TestTask {

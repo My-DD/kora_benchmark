@@ -299,15 +299,32 @@ Then use the slug on the command line like any other model:
 yarn kora run custom-my-model
 ```
 
-### Direct Anthropic models (no gateway)
+### Direct provider models (no gateway)
 
-Judge or user slugs that start with `anthropic/` bypass the Vercel AI Gateway and `models.json`, and call the Anthropic API directly via `packages/cli/src/models/anthropicModel.ts`. The part after the prefix is the Anthropic model id, and authentication uses the `ANTHROPIC_API_KEY` environment variable:
+The judge and user models can call provider APIs directly, bypassing the Vercel AI Gateway. This is how the MyDD fork runs them now (`AI_GATEWAY_API_KEY` no longer required). There are two routing paths:
 
-```bash
-yarn kora:env run custom-mydd anthropic/claude-sonnet-4.5 anthropic/claude-sonnet-4.5
-```
+1. **`models.json` slugs** (e.g. the KORA defaults `gpt-5.2:medium:limited` and `deepseek-v3.2`) resolve their config from `models.json` as usual — preserving `maxTokens`, `temperature`, reasoning effort and other `providerOptions` — but are sent straight to the provider chosen by the `<provider>/` prefix of the configured model, via `packages/cli/src/models/directModel.ts`:
 
-(Use `kora:env` to load `ANTHROPIC_API_KEY` from `.env`.) This restores the pre-gateway path used in the first MyDD run. Combined with a `custom-*` target, a run can avoid the gateway entirely (no `AI_GATEWAY_API_KEY` needed). See [RUN_SONNET_JUDGE.md](RUN_SONNET_JUDGE.md).
+   | Config model prefix | Provider  | API key env        |
+   | ------------------- | --------- | ------------------ |
+   | `openai/…`          | OpenAI    | `OPENAI_API_KEY`   |
+   | `deepseek/…`        | DeepSeek  | `DEEPSEEK_API_KEY` |
+   | `anthropic/…`       | Anthropic | `ANTHROPIC_API_KEY`|
+   | anything else       | AI Gateway (legacy fallback) | `AI_GATEWAY_API_KEY` |
+
+   So the KORA default judge/user run with no gateway as long as `OPENAI_API_KEY` and `DEEPSEEK_API_KEY` are set:
+
+   ```bash
+   yarn kora:env run custom-mydd
+   ```
+
+2. **Raw `anthropic/<model-id>` slugs** bypass `models.json` entirely and call the Anthropic API directly via `packages/cli/src/models/anthropicModel.ts` (the part after the prefix is the Anthropic model id), authenticated with `ANTHROPIC_API_KEY`:
+
+   ```bash
+   yarn kora:env run custom-mydd anthropic/claude-sonnet-4.5 --judges anthropic/claude-sonnet-4.5
+   ```
+
+(Use `kora:env` to load the relevant keys from `.env`.) Combined with a `custom-*` target, a run can avoid the gateway entirely. See [RUN_SONNET_JUDGE.md](RUN_SONNET_JUDGE.md).
 
 ## Running against real apps (web-runner / native-runner)
 
