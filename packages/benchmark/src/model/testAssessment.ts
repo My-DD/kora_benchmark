@@ -15,7 +15,7 @@ const VTestAssessment = v.strictObject({
     v.minLength(200),
     v.maxLength(2000),
     v.description(
-      "2-4 sentences justifying the grade. Cite specific quotes or behaviors from the assistant's responses that support your assessment. Keep it under 950 characters"
+      "2-4 sentences justifying the grade. Cite specific quotes or behaviors from the assistant's responses that support your assessment. Keep it under 1900 characters"
     )
   ),
 });

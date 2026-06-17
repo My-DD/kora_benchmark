@@ -12,26 +12,34 @@ import * as readline from "node:readline";
 import {consume, flatTransform} from "streaming-iterables";
 import * as v from "valibot";
 import {Program} from "../cli.js";
-import {createGatewayModel} from "../models/gatewayModel.js";
+import {
+  createGatewayModel,
+  createGatewayModelChain,
+} from "../models/gatewayModel.js";
 
 async function* readSeedsFromJsonl(
-  filePath: string
+  filePath: string,
+  riskIdFilter?: ReadonlySet<string>
 ): AsyncGenerator<ScenarioSeed> {
   const fh = await fs.open(filePath);
   const rl = readline.createInterface({input: fh.createReadStream()});
   for await (const line of rl) {
     const trimmed = line.trim();
     if (trimmed.length === 0) continue;
-    yield v.parse(ScenarioSeed.io, JSON.parse(trimmed));
+    const seed = v.parse(ScenarioSeed.io, JSON.parse(trimmed));
+    if (riskIdFilter && !riskIdFilter.has(seed.riskId)) continue;
+    yield seed;
   }
 }
 
-async function countJsonlLines(filePath: string): Promise<number> {
-  const fh = await fs.open(filePath);
-  const rl = readline.createInterface({input: fh.createReadStream()});
+async function countSeeds(
+  filePath: string,
+  riskIdFilter?: ReadonlySet<string>
+): Promise<number> {
   let count = 0;
-  for await (const line of rl) {
-    if (line.trim().length > 0) count++;
+  for await (const seed of readSeedsFromJsonl(filePath, riskIdFilter)) {
+    void seed;
+    count++;
   }
   return count;
 }
@@ -48,26 +56,34 @@ async function hasTempFiles(tempDir: string): Promise<boolean> {
 export async function expandScenariosCommand(
   _program: Program,
   modelsJsonPath: string,
-  modelSlug: string,
-  userModelSlug: string,
+  modelSlugs: readonly string[],
+  userModelSlugs: readonly string[],
   seedsFilePath: string,
-  outputFilePath: string
+  outputFilePath: string,
+  riskIds?: readonly string[]
 ) {
+  const fmtChain = (slugs: readonly string[]) =>
+    slugs.length === 1 ? slugs[0] : slugs.join(" → ");
   console.log(
-    `Expanding scenarios using ${modelSlug} (user: ${userModelSlug})...`
+    `Expanding scenarios using ${fmtChain(modelSlugs)} (user: ${fmtChain(userModelSlugs)})...`
   );
+  const riskIdFilter = riskIds?.length ? new Set(riskIds) : undefined;
+  if (riskIdFilter) {
+    console.log(`Filtering to risk IDs: ${[...riskIdFilter].join(", ")}`);
+  }
 
-  const model = createGatewayModel(modelsJsonPath, modelSlug);
-  const userModel = createGatewayModel(modelsJsonPath, userModelSlug);
-
-  const context: ExpandScenarioContext = {
-    getResponse: async request => ({
-      output: await model.getStructuredResponse(request),
-    }),
-    getUserResponse: async request => ({
-      output: await userModel.getTextResponse(request),
-    }),
-  };
+  // Expansion is wrapped in a task-level fallback chain: each seed tries the
+  // primary model first, then advances to the next on either a thrown error
+  // OR a ScenarioValidationError (the model returned valid JSON but the
+  // content was rejected by the validator — e.g. truncated mid-sentence).
+  // The per-call retry/fallback inside createGatewayModelChain only catches
+  // thrown errors, so validation failures slip past it; rotating at the task
+  // level fixes that.
+  const expansionModels = modelSlugs.map(slug => ({
+    label: slug,
+    model: createGatewayModel(modelsJsonPath, slug),
+  }));
+  const userModel = createGatewayModelChain(modelsJsonPath, userModelSlugs);
 
   const outputDir = path.dirname(outputFilePath);
   const tempDir = path.join(outputDir, ".kora-expand-tmp");
@@ -80,7 +96,7 @@ export async function expandScenariosCommand(
 
   await fs.mkdir(tempDir, {recursive: true});
 
-  const totalSeeds = await countJsonlLines(seedsFilePath);
+  const totalSeeds = await countSeeds(seedsFilePath, riskIdFilter);
   const progress = Script.progress(totalSeeds, text =>
     process.stdout.write(text)
   );
@@ -100,25 +116,54 @@ export async function expandScenariosCommand(
           // Not yet processed.
         }
 
-        try {
-          const scenarios = await kora.expandScenario(context, seed);
-          await fs.writeFile(tempFile, JSON.stringify(scenarios, null, 2));
-          progress.increment(true);
-        } catch (error) {
-          if (error instanceof ScenarioValidationError) {
+        let lastError: unknown;
+        for (let i = 0; i < expansionModels.length; i++) {
+          const {label, model} = expansionModels[i]!;
+          const context: ExpandScenarioContext = {
+            getResponse: async request => ({
+              output: await model.getStructuredResponse(request),
+            }),
+            getUserResponse: async request => ({
+              output: await userModel.getTextResponse(request),
+            }),
+          };
+
+          try {
+            const scenarios = await kora.expandScenario(context, seed);
+            await fs.writeFile(tempFile, JSON.stringify(scenarios, null, 2));
+            progress.increment(true);
+            return [];
+          } catch (error) {
+            lastError = error;
+            const next = expansionModels[i + 1];
+            const reason =
+              error instanceof ScenarioValidationError
+                ? `validation failed (${error.lastReasons.slice(0, 200)})`
+                : `error (${error instanceof Error ? error.message.slice(0, 200) : String(error)})`;
+
+            if (next) {
+              console.error(
+                `[fallback] expandScenario on ${label} for seed ${seed.id}: ${reason}; trying ${next.label}`
+              );
+              continue;
+            }
+
+            // Last model exhausted. Record the failure and keep going rather
+            // than aborting the whole run on a single seed (MyDD customization).
             console.error(
-              `\nValidation failed for seed ${seed.id}: ${error.lastReasons}`
+              error instanceof ScenarioValidationError
+                ? `\nValidation failed for seed ${seed.id} (all models exhausted): ${error.lastReasons}`
+                : `\nExpansion failed for seed ${seed.id} (all models exhausted): ${error}`
             );
-          } else {
-            console.error(`\nExpansion failed for seed ${seed.id}: ${error}`);
+            failureCount++;
+            progress.increment(false);
+            return [];
           }
-          failureCount++;
-          progress.increment(false);
         }
 
-        return [];
+        throw lastError;
       },
-      readSeedsFromJsonl(seedsFilePath)
+      readSeedsFromJsonl(seedsFilePath, riskIdFilter)
     )
   );
 

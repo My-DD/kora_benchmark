@@ -1,4 +1,5 @@
 import {
+  ModelMessage,
   ModelRequest,
   ModelResponse,
   SchemaWithOutput,
@@ -6,6 +7,7 @@ import {
   TypedModelResponse,
 } from "@korabench/core";
 import {AgeRange} from "./model/ageRange.js";
+import {PopulationDistribution} from "./model/populationDistribution.js";
 import {ScenarioPrompt} from "./model/scenarioPrompt.js";
 
 export interface GenerateSeedsContext {
@@ -21,12 +23,25 @@ export interface ExpandScenarioContext {
   getUserResponse: (request: ModelRequest) => Promise<ModelResponse>;
 }
 
+export interface JudgeModel {
+  getResponse: <T>(
+    request: TypedModelRequest<T>
+  ) => Promise<TypedModelResponse<T>>;
+}
+
+export type TraceEvent =
+  | {phase: "user_message"; turn: number; durationMs: number}
+  | {phase: "assistant_response"; turn: number; durationMs: number}
+  | {phase: "judge"; slug: string; durationMs: number}
+  | {phase: "judges"; durationMs: number; judgeCount: number};
+
 export interface TestContext {
   getUserResponse: (request: ModelRequest) => Promise<ModelResponse>;
   getAssistantResponse: (request: ModelRequest) => Promise<ModelResponse>;
-  getJudgeResponse: <T>(
-    request: TypedModelRequest<T>
-  ) => Promise<TypedModelResponse<T>>;
+  /** Record of judge model slug → callable judge model. */
+  judgeModels: Record<string, JudgeModel>;
+  /** Optional observability hook. No-op when undefined. */
+  trace?: (event: TraceEvent) => void;
 }
 
 export interface GenerationEvent<T> {
@@ -36,7 +51,12 @@ export interface GenerationEvent<T> {
 
 export interface GenerateSeedsOptions {
   seedsPerTask?: number;
+  totalSeeds?: number;
   ageRanges?: AgeRange[];
+  riskIds?: readonly string[];
+  motivations?: readonly string[];
+  distribution?: PopulationDistribution;
+  randomSeed?: number;
 }
 
 export interface Benchmark<TScenarioSeed, TScenario, TTestResult, TRunResult> {
@@ -59,7 +79,8 @@ export interface Benchmark<TScenarioSeed, TScenario, TTestResult, TRunResult> {
   runTest(
     c: TestContext,
     scenario: TScenario,
-    key: string
+    key: string,
+    startMessages?: readonly ModelMessage[]
   ): Promise<TTestResult>;
   mapTestResultToRunResult(result: TTestResult): TRunResult;
   reduceRunResult(result1: TRunResult, result2: TRunResult): TRunResult;

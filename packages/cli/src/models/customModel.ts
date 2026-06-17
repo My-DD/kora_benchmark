@@ -6,6 +6,14 @@ import {
   restoreChatEndpointMemory,
 } from "../commands/chatEndpoint.js";
 import {Model} from "./model.js";
+import {
+  createNativeRunnerModel,
+  isNativeRunnerSlug,
+} from "./nativeRunnerModel.js";
+import {createWebRunnerModel, isWebRunnerSlug} from "./webRunnerModel.js";
+
+const DEFAULT_WEB_RUNNER_URL = "http://localhost:7100";
+const DEFAULT_NATIVE_RUNNER_URL = "http://localhost:7200";
 
 function getBaseUrl(modelSlug: string): string {
   const baseUrl = process.env["MYDD_ENDPOINT_URL"];
@@ -21,6 +29,19 @@ export async function createCustomModel(
   modelSlug: string,
   scenario: Scenario
 ): Promise<Model> {
+  if (isNativeRunnerSlug(modelSlug)) {
+    const nativeRunnerUrl =
+      process.env.NATIVE_RUNNER_URL ?? DEFAULT_NATIVE_RUNNER_URL;
+    const apiKey = process.env.NATIVE_RUNNER_API_KEY;
+    return createNativeRunnerModel({modelSlug, nativeRunnerUrl, apiKey});
+  }
+  if (isWebRunnerSlug(modelSlug)) {
+    const webRunnerUrl = process.env.WEB_RUNNER_URL ?? DEFAULT_WEB_RUNNER_URL;
+    const apiKey = process.env.WEB_RUNNER_API_KEY;
+    return createWebRunnerModel({modelSlug, webRunnerUrl, apiKey});
+  }
+
+  // Default: route to the MyDD chat endpoint (MyDD customization).
   const baseUrl = getBaseUrl(modelSlug);
   const sessionId = `${uuid()}_${uuid()}`;
   const age = ageRangeToAge(scenario.seed.ageRange);
