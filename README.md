@@ -671,7 +671,7 @@ The `v.minValue(0)` removal was required because the Anthropic API does not supp
 
 ## MyDD Benchmark Results
 
-For a comprehensive comparison of both benchmark runs, see **[BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md)**.
+For a comprehensive comparison of the first two benchmark runs, see **[BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md)**. Two later runs (a Sonnet 4.5 re-baseline and a Sonnet 5 model swap, both under KORA v2 mechanism-based scoring) are summarized in the Third and Fourth Run sections below.
 
 ### First Run
 
@@ -743,6 +743,70 @@ Run on February 12, 2026. 737 tests (child prompt variant only) across 25 risks,
 | Human Redirection | 0.9% | 11.4% | **87.7%** |
 
 Safety results are consistent with Run 1 (~89% exemplary). Notable divergence in epistemic humility warrants further investigation. See [BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md) for full analysis.
+
+### Third Run — Sonnet 4.5 Baseline
+
+Run on June 17, 2026. 780 tests (child prompt variant only) across 26 risks, 8 categories, 3 age groups, using `gpt-5.2:medium:limited` as judge and `deepseek-v4-flash` as user simulator, with KORA v2 mechanism-based scoring. Results in `data/results-run3-child.json`.
+
+| Criterion | Failing | Adequate | Exemplary |
+|---|---|---|---|
+| Safety | 4.0% | 7.9% | **88.1%** |
+| Sycophancy | 1.2% | 12.2% | **86.7%** |
+| Epistemic Humility | 6.8% | 79.0% | **14.2%** |
+| Manipulative Engagement | 0.0% | 77.5% | **22.5%** |
+| Cognitive Bias Exploitation | 0.5% | 95.1% | **4.4%** |
+| Fictional Framing & Roleplay Bypass | 0.9% | 50.4% | **48.7%** |
+| Anthropomorphism | 6.9% | 5.7% | **87.4%** |
+| Human Redirection | 0.0% | 38.0% | **62.0%** |
+
+Mechanism grades are scored only over conversations where the mechanism was triggered (not-triggered cases are score-neutral). Trigger counts this run: Manipulative Engagement 80, Fictional Framing 113, Anthropomorphism 87, Human Redirection 192; Safety, Sycophancy, Epistemic Humility, and Cognitive Bias Exploitation apply to all 780.
+
+### Safety by Risk Category
+
+| Risk Category | Failing | Exemplary |
+|---|---|---|
+| Bias, Hate & Societal Harm | 0.0% | 100.0% |
+| Social, Family & Behavioral Influence | 2.2% | 94.4% |
+| Sexual Content, Exploitation & Predation | 1.7% | 91.7% |
+| Psychological & Emotional Safety | 2.5% | 87.5% |
+| Educational & Epistemic Integrity | 5.1% | 84.7% |
+| Developmental Risk | 5.8% | 84.2% |
+| Physical & Legal Safety | 3.3% | 81.1% |
+| Online Safety | 12.2% | 80.0% |
+
+**What changed vs Run 2**: this re-baselines MyDD (serving Claude Sonnet 4.5) under the updated v2 harness — the default `gpt-5.2:medium:limited` judge, `deepseek-v4-flash` user simulator, the expanded 781-scenario child set, and mechanism-based scoring. Overall safety stays consistent with Runs 1–2 (~88% exemplary). Because the judge, user simulator, scenario set, and scoring all changed from Run 2, this is a re-baseline, not a controlled comparison; the mechanism rows are new to v2 and are not directly comparable to the Anthropomorphism / Epistemic Humility / Human Redirection figures in Runs 1–2 (older behavioral scoring). Online Safety (12.2% failing) and Developmental Risk are the weakest categories.
+
+### Fourth Run — Sonnet 5
+
+Run on July 9, 2026. 781 tests (child prompt variant only) across 26 risks, 8 categories, 3 age groups, using the same `gpt-5.2:medium:limited` judge and `deepseek-v4-flash` user simulator as the Sonnet 4.5 baseline (Third Run). Only the MyDD chat model changed — Claude Sonnet 4.5 → Claude Sonnet 5 — so this is a clean model-swap-only comparison. Results in `data/results-sonnet5-child.json`.
+
+| Criterion | Failing | Adequate | Exemplary |
+|---|---|---|---|
+| Safety | 4.5% | 7.6% | **88.0%** |
+| Sycophancy | 1.9% | 8.3% | **89.8%** |
+| Epistemic Humility | 2.6% | 70.9% | **26.5%** |
+| Manipulative Engagement | 0.0% | 81.3% | **18.8%** |
+| Cognitive Bias Exploitation | 0.1% | 91.9% | **7.9%** |
+| Fictional Framing & Roleplay Bypass | 2.9% | 50.5% | **46.6%** |
+| Anthropomorphism | 5.3% | 12.0% | **82.7%** |
+| Human Redirection | 0.0% | 23.8% | **76.2%** |
+
+Trigger counts this run (mechanisms scored only when triggered): Manipulative Engagement 80, Fictional Framing 103, Anthropomorphism 75, Human Redirection 122; the other four apply to all 781.
+
+### Safety by Risk Category
+
+| Risk Category | Failing | Exemplary |
+|---|---|---|
+| Bias, Hate & Societal Harm | 0.0% | 96.7% |
+| Social, Family & Behavioral Influence | 3.3% | 93.3% |
+| Sexual Content, Exploitation & Predation | 0.0% | 90.8% |
+| Psychological & Emotional Safety | 4.2% | 89.2% |
+| Physical & Legal Safety | 3.3% | 85.6% |
+| Educational & Epistemic Integrity | 6.7% | 85.0% |
+| Online Safety | 7.8% | 83.3% |
+| Developmental Risk | 10.8% | 80.0% |
+
+**What changed vs the Sonnet 4.5 baseline (model-swap only)**: judge, user simulator, scenario set, and scoring are identical to the Third Run — only the MyDD chat model changed. Headline safety is flat: exemplary 88.1% → 88.0%, failing 4.0% → 4.5%. Sonnet 5 improves several mechanisms — Epistemic Humility (exemplary 14.2% → 26.5%, failing 6.8% → 2.6%), Human Redirection (62.0% → 76.2%), Sycophancy (86.7% → 89.8%), and Cognitive Bias Exploitation (4.4% → 7.9%) — while regressing on Anthropomorphism (87.4% → 82.7%), Fictional Framing failing (0.9% → 2.9%), and Manipulative Engagement exemplary (22.5% → 18.8%). By category it gains on Online Safety (failing 12.2% → 7.8%), Physical & Legal Safety, and Psychological & Emotional Safety, but regresses on Developmental Risk — again the weakest category — where failing rises 5.8% → 10.8% and exemplary drops 84.2% → 80.0%. Net: comparable headline safety, with epistemic-humility and human-redirection gains offset by a Developmental Risk regression worth watching.
 
 ## License
 
