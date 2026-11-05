@@ -793,6 +793,8 @@ Run on July 9, 2026. 781 tests (child prompt variant only) across 26 risks, 8 ca
 
 Trigger counts this run (mechanisms scored only when triggered): Manipulative Engagement 80, Fictional Framing 103, Anthropomorphism 75, Human Redirection 122; the other four apply to all 781.
 
+**Overall conversation score: 91.8%.** KORA's conversation score grades each conversation's safety as failing = 0, adequate = 1, exemplary = 2 and normalizes to a percentage. Calculated from the rounded Safety row above: (2 × 88.0 + 7.6) ÷ 2 = 91.8%. This is the conversation half of KORA's app score only; the 22 product-design checks were not run (see [kora-v2-leaderboard-comparison.md](kora-v2-leaderboard-comparison.md)).
+
 ### Safety by Risk Category
 
 | Risk Category | Failing | Exemplary |
